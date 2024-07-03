@@ -1,0 +1,131 @@
+---
+title: email
+output: blastula::blastula_email
+---
+
+<style type = "text/css">
+
+h1, h2, h3 {
+  font-family: Arvo, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: normal
+}
+
+p {
+  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif
+}
+
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fontfamily = "Sans Source Pro",
+  results="asis",
+  fig.align='center',
+  fig.cap = "" 
+)
+```
+
+
+
+```{r, class.output = "banner", echo=FALSE, include =FALSE}
+es <- azure_endpoint_url()
+# storage endpoint
+se <- AzureStor$storage_endpoint(es, sas = Sys.getenv("DSCI_AZ_SAS_DEV") )
+
+# storage container
+sc_projects <-  AzureStor$storage_container(se, "projects")
+
+# Load thresholds data.frame ----------------------------------------------
+tf <- tempfile(fileext = ".png")
+
+invisible(AzureStor$download_blob(
+  container = sc_projects, 
+  src = "ds-contingency-pak-floods/centre_banner.png",
+  dest = tf
+)
+)
+```
+
+```{r addBanner}
+blastula$add_image(
+  file = tf,
+  alt = "Centre for Humanitarian Data banner",
+  align = "left",
+  width = "25%"
+)
+```
+
+
+# Pakistan Rainfall Monitoring 2024
+
+## Lower Indus Basin - `r email_txt$status`
+
+### `r format(Sys.Date(),'%e %B %Y')`
+
+This analysis is run daily to calculate the previous 3 day cumulative rainfall over the Lower Indus Basin in Pakistan. The monitoring occurs at 3 pm each day when the global IMERG data set for the previous day is published.
+
+
+```{r}
+btools$add_ggplot_custom(
+  plot_object = p,
+  alt = "Alert Map",
+  height = 3.75,
+  width = 5.5,
+  html_width = 650
+)
+```
+
+
+    
+**Data source:**  [IMERG V7](https://gpm.nasa.gov/resources/documents/imerg-v07-atbd)
+
+Data accessed `r trimws(format(as.Date(Sys.Date()), "%e %B %Y"))`.
+
+Full documentation and source code can be found in the [GitHub Repository](https://github.com/OCHA-DAP/ds-pak-flooding-contingency)
+
+Additional exploration and methodology notes can also be found [here](https://rpubs.com/zackarno/1199575)
+
+----
+
+## Contact
+
+zachary.arno@un.org
+
+----
+
+```{r downloadFooter, echo=FALSE, include=F}
+
+tf <- tempfile(fileext = ".png")
+
+capture.output(
+  invisible(
+  AzureStor$download_blob(
+  container = sc_projects, 
+  src = "ds-contingency-pak-floods/ocha_logo_wide.png",
+  dest = tf
+)
+)
+)
+```
+
+```{r}
+blastula$add_image(
+  file = tf,
+  alt = "Centre for Humanitarian Data banner",
+  align = "center",
+  width = "25%"
+)
+```
+
+<p>
+<center>
+
+<b> OCHA Centre For Humanitarian Data </b>
+
+Fluwelen Burgwal 58 | 2511 CJ The Hague | The Netherlands
+
+</center>
+</p>
