@@ -1,4 +1,4 @@
-name: update-readme
+name: send-alert-email
 
 on:
   workflow_dispatch:
