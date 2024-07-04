@@ -19,23 +19,9 @@ execute:
   out.width: "100%"
   code-fold: true
 editor: visual
-project:
-  execute-dir: project
 ---
 
 ## Intro
-
-```{r}
-box::use(AzureStor)
-box::use(../R/utils[azure_endpoint_url])
-es <- azure_endpoint_url()
-blob_url <- paste0(
-  es, "projects/ds-contingency-pak-floods/imerg_rainfall_plot_update.png?", Sys.getenv("DSCI_AZ_SAS_DEV")
-)
-
-knitr::include_graphics(blob_url)
-
-```
 
 **background/objective:** desire to monitor rainfall over riverine areas in the Sindh province of Pakistan. If we can detect large rainfall events with high probability of flooding (in real time) we can shorten disbursement times for funding allocations.
 
@@ -59,41 +45,25 @@ library(janitor)
 library(gghdx)
 library(glue)
 library(ggiraph)
+library(geoarrow)
 gghdx()
 
-source("../R/utils.R")
 
-zf <- "/Users/zackarno/Downloads/hybas_as_lev01-12_v1c.zip"
-zf_vp <- paste0("/vsizip/",zf)
+box::use(../R/utils[...])
+box::use(../R/tar_load_basins[...])
 
 
-gdf_basins <- c(
-  level_3= "hybas_as_lev03_v1c",
-  level_4= "hybas_as_lev04_v1c"
-) |> 
-  map(
-    \(lyr_nm){
-      st_read(zf_vp, lyr_nm,quiet=T) |> 
-        clean_names() |> 
-        mutate(
-          level = str_extract(lyr_nm,"\\d{2}"),
-          region = "Asia"
-        ) |> 
-        st_make_valid()
-    }
-  ) 
+gdf_basins <- load_basins()
+lgdf_basins<- split(gdf_basins,gdf_basins$level)
 
 gdf_adm1 <- download_fieldmaps_sf(iso3="pak",layer = "pak_adm1")
 gdf_adm0 <- download_fieldmaps_sf(iso3="pak",layer = "pak_adm0")
-
-
-
 ```
 
 ```{r}
 
-gdf_basins3_pak <- gdf_basins$level_3[gdf_adm0,]
-gdf_basins4_pak <- gdf_basins$level_4[gdf_adm0,]
+gdf_basins3_pak <- lgdf_basins$`03`[gdf_adm0,]
+gdf_basins4_pak <- lgdf_basins$`04`[gdf_adm0,]
 
 indus_basin3_id <- 4030033640
 

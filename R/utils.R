@@ -1,3 +1,4 @@
+#' @export
 download_fieldmaps_sf <- function(iso3, layer=NULL) {
   iso3 <- tolower(iso3)
   download_shapefile(

@@ -1,6 +1,5 @@
 library(geoarrow)
-library(arrow)
-source("R/utils.R")
+box::use(../R/utils[...])
 
 
 
@@ -16,7 +15,7 @@ load_basins <-  function(){
     dest = tf
   )
   
-  open_dataset(tf) |> 
+  arrow::open_dataset(tf) |> 
     sf::st_as_sf() |> 
     sf::st_make_valid()
   
