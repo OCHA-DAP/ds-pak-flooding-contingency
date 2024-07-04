@@ -50,8 +50,8 @@ invisible(AzureStor$download_blob(
 ```
 
 ```{r addBanner}
-box::use(blastula)
-blastula$add_image(
+
+add_image(
   file = tf,
   alt = "Centre for Humanitarian Data banner",
   align = "left",
@@ -113,7 +113,7 @@ capture.output(
 ```
 
 ```{r}
-blastula$add_image(
+add_image(
   file = tf,
   alt = "Centre for Humanitarian Data banner",
   align = "center",

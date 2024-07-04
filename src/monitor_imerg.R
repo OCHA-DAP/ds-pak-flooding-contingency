@@ -7,15 +7,16 @@ box::use(ggplot2[...])
 box::use(lubridate[...])
 box::use(dplyr[...])
 box::use(stringr[...])
-box::use(../R/utils[azure_endpoint_url])
 box::use(gghdx[...])
 box::use(tidyr[...])
 box::use(glue[...])
 box::use(blastula[...])
-box::use(btools=../src/email_utils)
 box::use(exactextractr)
 box::use(AzureStor)
 box::use(zoo[...])
+
+box::use(../R/utils[azure_endpoint_url])
+box::use(btools=../src/email_utils)
 gghdx()
 
 
