@@ -161,7 +161,7 @@ p <- df_zonal_processed |>
   ) +
   annotate(
     geom = "text",
-    x = max(df_zonal_processed$date) - 1,
+    x = max(df_zonal_processed$date) - 2,
     y = df_thresholds$q_val + 5,
     label = glue("Threshold (5 year RP value): {round(df_thresholds$q_val,0)} mm"),
     size = 6
