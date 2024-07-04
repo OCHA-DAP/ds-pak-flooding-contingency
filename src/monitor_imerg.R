@@ -178,7 +178,8 @@ p <- df_zonal_processed |>
   scale_y_continuous(limits = c(0, y_max), expand = c(0, 0)) +
   theme(
     axis.title.x = element_blank(),
-    axis.title.y = element_text(size = 12),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 14),
     plot.title = element_text(size = 20),
     plot.subtitle = element_text(size = 16)
   )
@@ -188,10 +189,13 @@ is_alert <- any(df_zonal_processed$alert_flag, na.rm = T)
 
 run_date <- Sys.Date()
 email_txt <- list()
-email_txt$status <- ifelse(is_alert, "Alert", "No Alert")
+
+email_txt$subj_status <- ifelse(is_alert, "Alert", "No Alert")
+# make it colored in body
+email_txt$body_status <- ifelse(is_alert, "<span style='color: #F2645A;'>Alert</span>", "<span style='color: #55b284ff;'>No Alert</span>")
 
 
-email_txt$subject <- glue("Pakistan - Lower Indus Basin Rainfall Monitoring - {email_txt$status} ({trimws(format(run_date, '%e %B'))})")
+email_txt$subject <- glue("Pakistan - Lower Indus Basin Rainfall Monitoring - {email_txt$subj_status} ({trimws(format(run_date, '%e %B'))})")
 
 email_rmd_fp <- "email_pak_monitor.Rmd"
 # Load in e-mail credentials

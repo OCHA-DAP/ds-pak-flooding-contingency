@@ -62,11 +62,11 @@ add_image(
 
 # Pakistan Rainfall Monitoring 2024
 
-## Lower Indus Basin - `r email_txt$status`
+## Lower Indus Basin - `r email_txt$body_status`
 
 ### `r format(Sys.Date(),'%e %B %Y')`
 
-This analysis is run daily to calculate the previous 3 day cumulative rainfall over the Lower Indus Basin in Pakistan. The monitoring occurs at 3 pm each day when the global IMERG data set for the previous day is published.
+This analysis is run daily to calculate the previous 3 day cumulative rainfall over the Lower Indus Basin in Pakistan. The monitoring occurs at 3 pm UTC each day when the global IMERG data set for the previous day is published.
 
 
 ```{r}
@@ -85,15 +85,13 @@ btools$add_ggplot_custom(
 
 Data accessed `r trimws(format(as.Date(Sys.Date()), "%e %B %Y"))`.
 
-Full documentation and source code can be found in the [GitHub Repository](https://github.com/OCHA-DAP/ds-pak-flooding-contingency)
-
-Additional exploration and methodology notes can also be found [here](https://rpubs.com/zackarno/1199575)
+Full documentation and source code can be found in the [GitHub Repository](https://github.com/OCHA-DAP/ds-pak-flooding-contingency) and [Exploratory Technical Document](https://rpubs.com/zackarno/1199575)
 
 ----
 
 ## Contact
 
-zachary.arno@un.org
+Contact the OCHA Centre for Humanitarian Data via Leonardo Milano, Team Lead for Data Science at leonardo.milano@un.org with any questions or feedback.
 
 ----
 
