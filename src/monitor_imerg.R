@@ -18,12 +18,12 @@ box::use(AzureStor)
 gghdx()
 
 
-extract_date <- function(x){
+extract_date <- function(x) {
   as_date(
     str_extract(
-    x, 
-    "\\d{4}-\\d{2}-\\d{2}"
-  )
+      x,
+      "\\d{4}-\\d{2}-\\d{2}"
+    )
   )
 }
 
@@ -42,18 +42,18 @@ BAS4_ID_AOI <- c(
 
 
 # Set required env vars for terra::rast -----------------------------------
-Sys.setenv(AZURE_STORAGE_SAS_TOKEN=Sys.getenv("DSCI_AZ_SAS_DEV"))
-Sys.setenv(AZURE_STORAGE_ACCOUNT=Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
+Sys.setenv(AZURE_STORAGE_SAS_TOKEN = Sys.getenv("DSCI_AZ_SAS_DEV"))
+Sys.setenv(AZURE_STORAGE_ACCOUNT = Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
 
 
 # Create container end points ---------------------------------------------
 
 es <- azure_endpoint_url()
 # storage endpoint
-se <- AzureStor$storage_endpoint(es, sas = Sys.getenv("DSCI_AZ_SAS_DEV") )
+se <- AzureStor$storage_endpoint(es, sas = Sys.getenv("DSCI_AZ_SAS_DEV"))
 # storage container
-sc_global <-  AzureStor$storage_container(se, "global")
-sc_projects <-  AzureStor$storage_container(se, "projects")
+sc_global <- AzureStor$storage_container(se, "global")
+sc_projects <- AzureStor$storage_container(se, "projects")
 
 # Load thresholds data.frame ----------------------------------------------
 
@@ -61,7 +61,7 @@ sc_projects <-  AzureStor$storage_container(se, "projects")
 tf <- tempfile(fileext = ".parquet")
 
 AzureStor$download_blob(
-  container = sc_projects, 
+  container = sc_projects,
   src = "ds-contingency-pak-floods/imerg_flooding_thresholds.parquet",
   dest = tf
 )
@@ -73,45 +73,45 @@ df_thresholds <- read_parquet(tf)
 
 tf <- tempfile(fileext = ".parquet")
 AzureStor$download_blob(
-  container = sc_projects, 
+  container = sc_projects,
   src = "ds-contingency-pak-floods/hybas_asia_basins_03_04.parquet",
   dest = tf
 )
-gdf_aoi_bas4 <- open_dataset(tf) |> 
+gdf_aoi_bas4 <- open_dataset(tf) |>
   filter(
     level == "04",
     hybas_id %in% BAS4_ID_AOI
-  ) |> 
-  st_as_sf() |> 
-  st_make_valid() |> 
+  ) |>
+  st_as_sf() |>
+  st_make_valid() |>
   summarise()
 
 
 # Load IMERG Rasters ------------------------------------------------------
 
-cog_folder_contents <- AzureStor$list_blobs(sc_global,dir = "imerg/v7")
+cog_folder_contents <- AzureStor$list_blobs(sc_global, dir = "imerg/v7")
 
-cog_tbl <- cog_folder_contents |> 
+cog_tbl <- cog_folder_contents |>
   mutate(
     date = extract_date(name)
-  ) 
-  
-last_10_dates <- seq(max(cog_tbl$date)-9 , max(cog_tbl$date), by = "day")
+  )
+
+last_10_dates <- seq(max(cog_tbl$date) - 9, max(cog_tbl$date), by = "day")
 
 az_prefix <- "/vsiaz/global/"
 
-az_urls <- cog_tbl |> 
+az_urls <- cog_tbl |>
   filter(
     date %in% last_10_dates
-  ) |> 
+  ) |>
   mutate(
-    az_url = paste0(az_prefix , name)
-  ) |> 
+    az_url = paste0(az_prefix, name)
+  ) |>
   pull(az_url)
 
 
 
-r <- rast(az_urls,win = gdf_aoi_bas4 )
+r <- rast(az_urls, win = gdf_aoi_bas4)
 names(r) <- extract_date(sources(r))
 
 
@@ -119,21 +119,21 @@ names(r) <- extract_date(sources(r))
 
 df_zonal <- exactextractr$exact_extract(
   x = r,
-  y = gdf_aoi_bas4 ,
-  fun ="mean",
+  y = gdf_aoi_bas4,
+  fun = "mean",
   force_df = TRUE,
   append_cols = colnames(gdf_aoi_bas4)
-) |> 
-  pivot_longer(everything()) |> 
+) |>
+  pivot_longer(everything()) |>
   mutate(
-    date= extract_date(name)
-  ) |> 
+    date = extract_date(name)
+  ) |>
   arrange(date)
 
-df_zonal_processed <- df_zonal |> 
+df_zonal_processed <- df_zonal |>
   mutate(
-    `3d` = zoo::rollsum(x =value, k=3, fill = NA, align = "right"),
-    alert_flag = `3d`>= df_thresholds$q_val
+    `3d` = zoo::rollsum(x = value, k = 3, fill = NA, align = "right"),
+    alert_flag = `3d` >= df_thresholds$q_val
   )
 
 
@@ -142,53 +142,53 @@ df_zonal_processed <- df_zonal |>
 
 max_rainfall <- max(df_zonal_processed$`3d`, na.rm = TRUE)
 
-y_max <-  if_else(df_thresholds$q_val >= max_rainfall, df_thresholds$q_val+10, max_rainfall+10 )
+y_max <- if_else(df_thresholds$q_val >= max_rainfall, df_thresholds$q_val + 10, max_rainfall + 10)
 
-p <- df_zonal_processed |> 
-  filter(!is.na(`3d`)) |> 
+p <- df_zonal_processed |>
+  filter(!is.na(`3d`)) |>
   ggplot(
-    aes(x= date, y= `3d`)
-  )+
-  geom_line()+ 
-  geom_point()+
+    aes(x = date, y = `3d`)
+  ) +
+  geom_line() +
+  geom_point() +
   geom_hline(
-    yintercept = df_thresholds$q_val, 
+    yintercept = df_thresholds$q_val,
     color = hdx_hex("tomato-hdx"),
     linetype = "dashed"
-  )+
+  ) +
   annotate(
     geom = "text",
-    x = max(df_zonal_processed$date)-1,
-    y= df_thresholds$q_val+5,
+    x = max(df_zonal_processed$date) - 1,
+    y = df_thresholds$q_val + 5,
     label = glue("Threshold (5 year RP value): {round(df_thresholds$q_val,0)} mm"),
-    size= 6
-  )+
+    size = 6
+  ) +
   scale_x_date(
-    date_breaks = "day",date_labels = "%b %d"
-  )+
+    date_breaks = "day", date_labels = "%b %d"
+  ) +
   labs(
     title = "Cumulative 3-day Precipitation",
     subtitle = "Pakistan: Lower Indus Basin Surrounding Sindh Province",
-    y = "Precipitation (mm)", 
+    y = "Precipitation (mm)",
     caption = glue("Data source: IMERG\nProduced {Sys.Date()} ")
-  )+
-  scale_y_continuous(limits = c(0,y_max),expand = c(0,0))+
+  ) +
+  scale_y_continuous(limits = c(0, y_max), expand = c(0, 0)) +
   theme(
     axis.title.x = element_blank(),
-    axis.title.y = element_text(size= 12),
+    axis.title.y = element_text(size = 12),
     plot.title = element_text(size = 20),
     plot.subtitle = element_text(size = 16)
   )
 
 
-is_alert <- any(df_zonal_processed$alert_flag,na.rm=T)
+is_alert <- any(df_zonal_processed$alert_flag, na.rm = T)
 
 run_date <- Sys.Date()
 email_txt <- list()
-email_txt$status <-  ifelse(is_alert, "Alert", "No Alert")
+email_txt$status <- ifelse(is_alert, "Alert", "No Alert")
 
 
-email_txt$subject <-  glue("Pakistan - Lower Indus Basin Rainfall Monitoring - {email_txt$status} ({trimws(format(run_date, '%e %B'))})")
+email_txt$subject <- glue("Pakistan - Lower Indus Basin Rainfall Monitoring - {email_txt$status} ({trimws(format(run_date, '%e %B'))})")
 
 email_rmd_fp <- "email_pak_monitor.Rmd"
 # Load in e-mail credentials
@@ -199,8 +199,6 @@ email_creds <- creds_envvar(
   port = Sys.getenv("CHD_DS_PORT"),
   use_ssl = TRUE
 )
-
-
 
 render_email(
   input = email_rmd_fp,
@@ -213,4 +211,3 @@ render_email(
     subject = email_txt$subject,
     credentials = email_creds
   )
-
