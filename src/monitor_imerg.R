@@ -42,9 +42,9 @@ BAS4_ID_AOI <- c(
 
 
 # Set required env vars for terra::rast -----------------------------------
-Sys.setenv(AZURE_STORAGE_SAS_TOKEN = Sys.getenv("DSCI_AZ_SAS_DEV"))
-Sys.setenv(AZURE_SAS = Sys.getenv("DSCI_AZ_SAS_DEV")) # maybe newer gdal version req?
-Sys.setenv(AZURE_STORAGE_ACCOUNT = Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
+# Sys.setenv(AZURE_STORAGE_SAS_TOKEN = Sys.getenv("DSCI_AZ_SAS_DEV"))
+# Sys.setenv(AZURE_SAS = Sys.getenv("DSCI_AZ_SAS_DEV")) # maybe newer gdal version req?
+# Sys.setenv(AZURE_STORAGE_ACCOUNT = Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
 
 
 # Create container end points ---------------------------------------------
