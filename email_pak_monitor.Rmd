@@ -50,6 +50,7 @@ invisible(AzureStor$download_blob(
 ```
 
 ```{r addBanner}
+box::use(blastula)
 blastula$add_image(
   file = tf,
   alt = "Centre for Humanitarian Data banner",

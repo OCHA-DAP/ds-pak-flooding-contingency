@@ -18,5 +18,6 @@ install.packages(
     "exactextractr",
     "rlang",
     "box",
+    "zoo",
     "AzureStor")
 )

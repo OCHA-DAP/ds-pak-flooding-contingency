@@ -15,6 +15,7 @@ box::use(blastula[...])
 box::use(btools=../src/email_utils)
 box::use(exactextractr)
 box::use(AzureStor)
+box::use(zoo[...])
 gghdx()
 
 
@@ -133,7 +134,7 @@ df_zonal <- exactextractr$exact_extract(
 
 df_zonal_processed <- df_zonal |>
   mutate(
-    `3d` = zoo::rollsum(x = value, k = 3, fill = NA, align = "right"),
+    `3d` = rollsum(x = value, k = 3, fill = NA, align = "right"),
     alert_flag = `3d` >= df_thresholds$q_val
   )
 
