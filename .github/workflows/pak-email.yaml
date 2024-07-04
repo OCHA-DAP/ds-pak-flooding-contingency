@@ -40,7 +40,7 @@ jobs:
         if: steps.cache-r-deps.outputs.cache-hit != 'true'
         run: |
           Rscript .github/depends_email.R
-      
+          
       - name: monitor-imerg
         run: |
           source(file.path("src", "monitor_imerg.R"))

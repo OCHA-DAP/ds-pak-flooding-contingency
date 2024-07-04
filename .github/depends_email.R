@@ -17,5 +17,6 @@ install.packages(
     "blastula",
     "exactextractr",
     "rlang",
+    "box",
     "AzureStor")
 )
