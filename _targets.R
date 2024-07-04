@@ -1,6 +1,7 @@
 # Load packages required to define the pipeline:
 library(targets)
-# library(tarchetypes) # Load other packages as needed.
+tar_source()
+
 
 # Set target options:
 tar_option_set(
@@ -13,10 +14,6 @@ tar_option_set(
   ) # Packages that your targets need for their tasks.
   
 )
-tar_source()
-
-# zf <- "/Users/zackarno/Downloads/hybas_as_lev01-12_v1c.zip"
-# zf_vp <- paste0("/vsizip/",zf)
 
 
 es <- azure_endpoint_url()

@@ -1,3 +1,4 @@
+#' Code can only be executed after _targets.R pipeline has been run.
 # write data.frame/tibble containing thresholds created by _targets.R
 # pipeline to .parquet file in blob container for easy programmatic access
 # for monitoring.

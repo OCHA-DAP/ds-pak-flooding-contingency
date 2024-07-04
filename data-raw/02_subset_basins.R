@@ -1,12 +1,13 @@
+#' This script takes the basin parquet uploaded in 01_upload_hydrobasins_asia
+#' and subsets. The reason being is that this file will get rid into the live
+#' monitoring github actions every time. Therefore we do not need to load the large full 0-12 level file.
+
 box::use(arrow[...])
 box::use(geoarrow[...])
 box::use(dplyr[...])
-
 box::use(AzureStor)
 
 box::use(../R/utils[azure_endpoint_url])
-
-
 
 es <- azure_endpoint_url()
 
