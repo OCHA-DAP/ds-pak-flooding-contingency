@@ -15,7 +15,7 @@ box::use(exactextractr)
 box::use(AzureStor)
 box::use(zoo[...])
 
-box::use(../R/utils[azure_endpoint_url])
+box::use(../R/utils[azure_endpoint_url,load_proj_contatiners])
 box::use(btools=../src/email_utils)
 gghdx()
 
@@ -50,13 +50,7 @@ BAS4_ID_AOI <- c(
 
 
 # Create container end points ---------------------------------------------
-
-es <- azure_endpoint_url()
-# storage endpoint
-se <- AzureStor$storage_endpoint(es, sas = Sys.getenv("DSCI_AZ_SAS_DEV"))
-# storage container
-sc_global <- AzureStor$storage_container(se, "global")
-sc_projects <- AzureStor$storage_container(se, "projects")
+pc <- load_proj_contatiners()
 
 # Load thresholds data.frame ----------------------------------------------
 
@@ -64,10 +58,11 @@ sc_projects <- AzureStor$storage_container(se, "projects")
 tf <- tempfile(fileext = ".parquet")
 
 AzureStor$download_blob(
-  container = sc_projects,
+  container = pc$PROJECTS_CONT,
   src = "ds-contingency-pak-floods/imerg_flooding_thresholds.parquet",
   dest = tf
 )
+
 df_thresholds <- read_parquet(tf)
 
 
@@ -76,7 +71,7 @@ df_thresholds <- read_parquet(tf)
 
 tf <- tempfile(fileext = ".parquet")
 AzureStor$download_blob(
-  container = sc_projects,
+  container = pc$PROJECTS_CONT,
   src = "ds-contingency-pak-floods/hybas_asia_basins_03_04.parquet",
   dest = tf
 )
@@ -92,7 +87,7 @@ gdf_aoi_bas4 <- open_dataset(tf) |>
 
 # Load IMERG Rasters ------------------------------------------------------
 
-cog_folder_contents <- AzureStor$list_blobs(sc_global, dir = "imerg/v7")
+cog_folder_contents <- AzureStor$list_blobs(pc$GLOBAL_CONT, dir = "imerg/v7")
 
 cog_tbl <- cog_folder_contents |>
   mutate(

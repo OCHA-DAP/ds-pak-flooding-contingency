@@ -7,16 +7,7 @@ library(arrow)
 library(geoarrow)
 source("R/utils.R")
 
-
-# I guess i could put the raw zip on the blob and download it as a tempfile,
-# but seems a bit annoying since im just running this once. Adding it as a **TODO**
-
-es <- azure_endpoint_url()
-# storage endpoint
-se <- AzureStor::storage_endpoint(es, sas = Sys.getenv("DSCI_AZ_SAS_DEV"))
-# storage container
-sc_global <- AzureStor::storage_container(se, "global")
-
+pc <- load_proj_contatiners()
 
 # Load thresholds data.frame ----------------------------------------------
 
@@ -24,7 +15,7 @@ sc_global <- AzureStor::storage_container(se, "global")
 tf <- tempfile(fileext = ".zip")
 
 AzureStor$download_blob(
-  container = sc_global,
+  container = pc$GLOBAL_CONT,
   src = "vector/hybas_as_lev01-12_v1c.zip",
   dest = tf
 )

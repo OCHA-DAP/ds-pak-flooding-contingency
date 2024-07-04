@@ -81,6 +81,20 @@ download_shapefile <- function(
 
 
 #' @export
+load_proj_contatiners <- function(){
+  es <- azure_endpoint_url()
+  # storage endpoint
+  se <- AzureStor::storage_endpoint(es, sas = Sys.getenv("DSCI_AZ_SAS_DEV"))
+  # storage container
+  sc_global <- AzureStor::storage_container(se, "global")
+  sc_projects <- AzureStor::storage_container(se, "projects")
+  list(
+    GLOBAL_CONT = sc_global,
+    PROJECTS_CONT = sc_projects
+  )
+}
+
+#' @export
 azure_endpoint_url <- function(
     service = c("blob", "file"),
     stage = c("dev", "prod"),

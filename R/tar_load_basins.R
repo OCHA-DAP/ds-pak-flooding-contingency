@@ -1,20 +1,24 @@
+library(geoarrow)
+library(arrow)
+source("R/utils.R")
 
 
 
-load_basins <-  function(zip_file_path=zfp_basins){
-  map(
-    c(level_3= "hybas_as_lev03_v1c",
-      level_4= "hybas_as_lev04_v1c") , \(lyr_nm){
-        st_read(
-          paste0("/vsizip/",zip_file_path), lyr_nm,quiet=T
-          ) |> 
-            clean_names() |> 
-            mutate(
-              level = str_extract(lyr_nm,"\\d{2}"),
-              region = "Asia"
-            ) |> 
-            st_make_valid()
-        
-      }
+#' load basins levels 3 & 4 created in data-raw/03_subset_basins.R
+#'
+#' @return sf object
+load_basins <-  function(){
+  pc <- load_proj_contatiners()
+  tf <- tempfile(fileext = ".parquet")
+  AzureStor::download_blob(
+    container = pc$PROJECTS_CONT,
+    src = "ds-contingency-pak-floods/hybas_asia_basins_03_04.parquet",
+    dest = tf
   )
+  
+  open_dataset(tf) |> 
+    sf::st_as_sf() |> 
+    sf::st_make_valid()
+  
+  
 }
