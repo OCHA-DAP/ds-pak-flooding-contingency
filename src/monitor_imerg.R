@@ -44,13 +44,38 @@ BAS4_ID_AOI <- c(
 
 
 # Set required env vars for terra::rast -----------------------------------
-# Sys.setenv(AZURE_STORAGE_SAS_TOKEN = Sys.getenv("DSCI_AZ_SAS_DEV"))
-# Sys.setenv(AZURE_SAS = Sys.getenv("DSCI_AZ_SAS_DEV")) # maybe newer gdal version req?
+
+# Oddly, on my computer i need to un-comment these to run OR I think I could
+# add `AZURE_SAS` + `AZURE_STORAGE_ACCOUNT` to `.Renviron`. Oddly,Setting the
+# Sys.env vars like this on the GHA runner does not work even if I
+# have `DSCI_AZ_SAS_DEV` + `DSCI_AZ_STORAGE_ACCOUNT` already stored as secrets
+# I still need to to have  AZURE_SAS + `AZURE_STORAGE_ACCOUNT` stored 
+# separately. I think it could be due to a newer version of gdal on runner w/
+# slighly different requirements for accessing azure storage.
+
+# Sys.setenv(AZURE_SAS = Sys.getenv("DSCI_AZ_SAS_DEV"))
 # Sys.setenv(AZURE_STORAGE_ACCOUNT = Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
 
 
 # Create container end points ---------------------------------------------
 pc <- load_proj_contatiners()
+
+# Load thresholds data.frame ----------------------------------------------
+
+
+tf <- tempfile(fileext = "csv")
+
+AzureStor$download_blob(
+  container = pc$PROJECTS_CONT,
+  src = "ds-contingency-pak-floods/pak_monitoring_email_receps.csv",
+  dest = tf
+)
+
+df_receps <- read.csv(tf)
+df_receps <- df_receps |> 
+  mutate(
+    Frequency = trimws(tolower(Frequency))
+  )
 
 # Load thresholds data.frame ----------------------------------------------
 
@@ -203,9 +228,24 @@ email_creds <- creds_envvar(
 )
 
 if(is_test_email){
-  to_email <- "zachary.arno@un.org"
+  to_email <- df_receps[df_receps$test,"Email.Address"]
 } else if(!is_test_email){
-  to_email <- NULL
+  if(is_alert){
+    to_email <- df_receps |> 
+      filter(
+        Frequency == "alerts"
+      ) |> 
+      pull(
+        Email.Address
+      )
+  } else if(!is_alert) {
+    to_email <- df_receps |> 
+      filter(
+        Frequency == "daily"
+      ) |> 
+      pull(Email.Address)
+    
+  }
 }
 
 render_email(
@@ -214,7 +254,6 @@ render_email(
 ) %>%
   smtp_send(
     from = "data.science@humdata.org",
-    # to = df_email_receps$Email,
     to = to_email,
     subject = email_txt$subject,
     credentials = email_creds
