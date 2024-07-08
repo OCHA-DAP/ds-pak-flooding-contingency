@@ -20,6 +20,8 @@ box::use(btools=../src/email_utils)
 gghdx()
 
 
+is_test_email <- as.logical(Sys.getenv("TEST_EMAIL", unset = TRUE))
+
 extract_date <- function(x) {
   as_date(
     str_extract(
@@ -28,8 +30,6 @@ extract_date <- function(x) {
     )
   )
 }
-
-
 
 # AOI Basins --------------------------------------------------------------
 
@@ -202,6 +202,12 @@ email_creds <- creds_envvar(
   use_ssl = TRUE
 )
 
+if(is_test_email){
+  to_email <- "zachary.arno@un.org"
+} else if(!is_test_email){
+  to_email <- NULL
+}
+
 render_email(
   input = email_rmd_fp,
   envir = parent.frame()
@@ -209,7 +215,7 @@ render_email(
   smtp_send(
     from = "data.science@humdata.org",
     # to = df_email_receps$Email,
-    to = "zachary.arno@un.org",
+    to = to_email,
     subject = email_txt$subject,
     credentials = email_creds
   )

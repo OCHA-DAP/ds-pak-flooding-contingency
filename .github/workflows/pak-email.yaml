@@ -2,6 +2,14 @@ name: send-alert-email
 
 on:
   workflow_dispatch:
+      inputs:
+        TEST_EMAIL:
+          required: true
+          type: choice
+          default: "TRUE"
+          options:
+            - "TRUE"
+            - "FALSE"  
   # schedule:
   #   - cron: '10 8-23/3 * * *' # start at 8:10 AM run every 3 hours until midnight
   #   - cron: '0 0,3,6 * * *'   # then run at midnight, 3 am, 6 am
@@ -52,3 +60,4 @@ jobs:
           CHD_DS_PORT: ${{ secrets.CHD_DS_PORT }}
           AZURE_SAS: ${{ secrets.AZURE_SAS }}
           AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
+          TEST_EMAIL: ${{ inputs.TEST_EMAIL || 'FALSE' }}
