@@ -1,11 +1,14 @@
 #' Script to write out entire hydrobasins asia dataset to parquet file
 #' and store on blob. 
-library(sf)
-library(janitor)
-library(tidyverse)
-library(arrow)
-library(geoarrow)
-source("R/utils.R")
+box::use(sf[...])
+box::use(janitor[...])
+box::use(dplyr[...])
+box::use(purrr[...])
+box::use(arrow[...])
+box::use(geoarrow[...])
+box::use(../R/utils[...])
+box::use(AzureStor)
+
 
 pc <- load_proj_contatiners()
 
