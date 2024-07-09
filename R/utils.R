@@ -1,5 +1,5 @@
 #' @export
-download_fieldmaps_sf <- function(iso3, layer=NULL) {
+download_fieldmaps_sf <- function(iso3, layer = NULL) {
   iso3 <- tolower(iso3)
   download_shapefile(
     url = glue::glue("https://data.fieldmaps.io/cod/originals/{iso3}.gpkg.zip"),
@@ -30,20 +30,19 @@ download_shapefile <- function(
     url,
     layer = NULL,
     iso3 = NULL,
-    boundary_source = NULL
-) {
+    boundary_source = NULL) {
   if (stringr::str_ends(url, ".zip")) {
     utils::download.file(
       url = url,
       destfile = zf <- tempfile(fileext = ".zip"),
       quiet = TRUE
     )
-    
+
     utils::unzip(
       zipfile = zf,
       exdir = td <- tempdir()
     )
-    
+
     # if the file extension is just `.zip`, we return the temp dir alone
     # because that works for shapefiles, otherwise we return the file unzipped
     fn <- stringr::str_remove(basename(url), ".zip")
@@ -59,7 +58,7 @@ download_shapefile <- function(
       quiet = TRUE
     )
   }
-  
+
   if (!is.null(layer)) {
     ret <- sf::st_read(
       fn,
@@ -72,17 +71,17 @@ download_shapefile <- function(
       quiet = TRUE
     )
   }
-  
+
   # add in iso3 and boundary source. if NULL, no change will happen
   ret$iso3 <- iso3
   ret$boundary_source <- boundary_source
-  
+
   ret
 }
 
 
 #' @export
-load_proj_contatiners <- function(){
+load_proj_contatiners <- function() {
   es <- azure_endpoint_url()
   # storage endpoint
   se <- AzureStor::storage_endpoint(es, sas = Sys.getenv("DSCI_AZ_SAS_DEV"))
@@ -99,8 +98,7 @@ load_proj_contatiners <- function(){
 azure_endpoint_url <- function(
     service = c("blob", "file"),
     stage = c("dev", "prod"),
-    storage_account = "imb0chd0"
-) {
+    storage_account = "imb0chd0") {
   blob_url <- "https://{storage_account}{stage}.{service}.core.windows.net/"
   service <- rlang::arg_match(service)
   stage <- rlang::arg_match(stage)

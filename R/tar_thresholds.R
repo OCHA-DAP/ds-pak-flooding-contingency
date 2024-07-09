@@ -1,61 +1,63 @@
-# tar_thresholds
+# target specific functions for running historical analysis
+# and threshold setting in the pipeline
+source("R/utils.R")
 
-roll_zonal_stats <- function(df){
-  df |> 
+
+roll_zonal_stats <- function(df) {
+  df |>
     rename(
       `1d` = mean
     ) |>
-    group_by(aoi) |> 
-    arrange(aoi,date) |> 
+    group_by(aoi) |>
+    arrange(aoi, date) |>
     mutate(
-      `2d` = zoo::rollsum(x = `1d`, k=2, fill = NA, align = "right"),
-      `3d` = zoo::rollsum(x = `1d`, k=3, fill = NA, align = "right"),
-    ) |> 
-    pivot_longer(cols = c("1d","2d","3d"))
-} 
+      `2d` = zoo::rollsum(x = `1d`, k = 2, fill = NA, align = "right"),
+      `3d` = zoo::rollsum(x = `1d`, k = 3, fill = NA, align = "right"),
+    ) |>
+    pivot_longer(cols = c("1d", "2d", "3d"))
+}
 
 
-add_smoothed_mean <- function(df, k= 10){
-  df |> 
-    arrange(aoi, name, date) |> 
+add_smoothed_mean <- function(df, k = 10) {
+  df |>
+    arrange(aoi, name, date) |>
     group_by(
       aoi, name
-    ) |> 
+    ) |>
     mutate(
       doy = day(date),
-      smoothed = zoo::rollmean(x = value, k=k, fill = NA, align = "right"),
-    ) |> 
+      smoothed = zoo::rollmean(x = value, k = k, fill = NA, align = "right"),
+    ) |>
     group_by(
       doy,
-      .add=TRUE
-    ) |> 
+      .add = TRUE
+    ) |>
     mutate(
       avg_smooth =  mean(smoothed),
       anom = smoothed - avg_smooth,
-      std_anom = anom/sd(smoothed)
-    ) |> 
+      std_anom = anom / sd(smoothed)
+    ) |>
     ungroup()
-} 
+}
 
-yearly_max <- function(df){
-  df |> 
+yearly_max <- function(df) {
+  df |>
     mutate(
       yr_date = floor_date(date, "year")
-    ) |> 
-    group_by(aoi,yr_date,name) |> 
+    ) |>
+    group_by(aoi, yr_date, name) |>
     summarise(
-      value = max(value,na.rm = TRUE),
-      anom = max(anom,na.rm = TRUE),
-      std_anom = max(std_anom,na.rm = TRUE),
+      value = max(value, na.rm = TRUE),
+      anom = max(anom, na.rm = TRUE),
+      std_anom = max(std_anom, na.rm = TRUE),
     )
-  
 }
 
 
 
-# function 
+# function
 grouped_quantile_summary <- function(df,
-                                     x ,
+                                     x,
                                      grp_vars,
                                      rps = c(1:10)) {
   df %>%
@@ -65,18 +67,41 @@ grouped_quantile_summary <- function(df,
     reframe(
       rp = rps,
       q = 1 / rp,
-      q_val = quantile(.data[[x]], probs = 1-(1 / rp))
+      q_val = quantile(.data[[x]], probs = 1 - (1 / rp))
     )
 }
 
-# df_rp_thresholds <- df_roll_max |> 
-#   grouped_quantile_summary(
-#     x= "value",
-#     grp_vars = c("aoi","name"),
-#     rps= 1:10
-#   )
-# 
-# 
-# df_rp_threshold_filt<- df_rp_thresholds |> 
-#   filter(rp %in% c(3,4,5)) |> 
-#   select(aoi,name,rp, threshold = q_val) 
+
+#' select_thresholds
+#' convenience function to filter  thresholds to desired RP and then write
+#' data.frame to blob as parquet for use in monitoring
+#' @param df data.frame (`df_quantiles` from _targets.r) containing thresholds
+#'  for each RP/quantile value
+#' @param write_blob logical (default = TRUE). If TRUE data.frame will be
+#'   written to blob as .parquet file
+#'
+#' @return data.frame
+select_final_thresholds <- function(
+    df,
+    write_blob = T) {
+  df_sel <- df |>
+    filter(
+      aoi == "basin_4",
+      name == "3d",
+      rp == 5
+    )
+  if (write_blob) {
+    cont <- load_proj_contatiners()$PROJECTS_CONT
+    tf <- tempfile(fileext = ".parquet")
+    write_parquet(
+      x = df_sel,
+      sink = tf
+    )
+    AzureStor::upload_blob(
+      container = cont,
+      src = tf,
+      dest = "ds-contingency-pak-floods/imerg_flooding_thresholds.parquet",
+    )
+  }
+  df_sel
+}

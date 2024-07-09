@@ -1,4 +1,10 @@
-# Load packages required to define the pipeline:
+#' Targets analysis pipeline
+#' The zonal stats (`imerg_zonal()`) could take anywhere from 20 minutes
+#' to an hour depending on your connection. Therefore you may want to run this
+#' code as a background process. On mac use the terminal to navigate to the 
+#' repo root and run:
+#' caffeinate -i -s Rscript -e 'targets::tar_make()'
+
 library(targets)
 tar_source()
 
@@ -10,23 +16,23 @@ tar_option_set(
     "tidyverse",
     "terra",
     "janitor",
-    "exactextractr"
+    "exactextractr",
+    "arrow"
   ) # Packages that your targets need for their tasks.
-  
 )
 
 pc <- load_proj_contatiners()
 
-cog_folder_contents <- AzureStor::list_blobs(pc$GLOBAL_CONT,dir = "imerg/v6")
+cog_folder_contents <- AzureStor::list_blobs(pc$GLOBAL_CONT, dir = "imerg/v6")
 
 az_prefix <- "/vsiaz/"
 container <- "global/"
-urls <- paste0(az_prefix,container, cog_folder_contents$name)
+urls <- paste0(az_prefix, container, cog_folder_contents$name)
 
 
 # necessary for GDAL + AZURE Connection (terra)
-Sys.setenv(AZURE_STORAGE_SAS_TOKEN=Sys.getenv("DSCI_AZ_SAS_DEV"))
-Sys.setenv(AZURE_STORAGE_ACCOUNT=Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
+Sys.setenv(AZURE_STORAGE_SAS_TOKEN = Sys.getenv("DSCI_AZ_SAS_DEV"))
+Sys.setenv(AZURE_STORAGE_ACCOUNT = Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
 
 
 BAS4_ID_AOI <- c(
@@ -52,44 +58,44 @@ list(
   # ),
   tar_target(
     name = gdf_basins,
-    command=  load_basins()
+    command = load_basins()
   ),
   tar_target(
     name = gdf_adm1,
-    command = download_fieldmaps_sf(iso3="pak",layer = "pak_adm1")
+    command = download_fieldmaps_sf(iso3 = "pak", layer = "pak_adm1")
   ),
   tar_target(
-    name= gdf_aoi_bas3,
-    command = gdf_basins |> 
+    name = gdf_aoi_bas3,
+    command = gdf_basins |>
       filter(
         level == "03",
         hybas_id %in% BAS3_ID_AOI
-      ) 
+      )
   ),
   tar_target(
-    name= gdf_aoi_bas4,
-    command = gdf_basins |> 
+    name = gdf_aoi_bas4,
+    command = gdf_basins |>
       filter(
-        level =="04",
+        level == "04",
         hybas_id %in% BAS4_ID_AOI
-      ) |> 
+      ) |>
       summarise()
   ),
 
-# Zonal STats -------------------------------------------------------------
+  # Zonal STats -------------------------------------------------------------
 
-  
+
   # since retrieving the rasters is the time-limiting step in zonal extraction
-  # much faster to merge AOI options into MULTIPOLYGON and run zonal stats 
+  # much faster to merge AOI options into MULTIPOLYGON and run zonal stats
   # for both at once
   tar_target(
     name = gdf_aoi_merged,
-    command =bind_rows(
-      gdf_aoi_bas3 |> 
+    command = bind_rows(
+      gdf_aoi_bas3 |>
         transmute(
           aoi = "basin_3"
         ),
-      gdf_aoi_bas4 |> 
+      gdf_aoi_bas4 |>
         transmute(
           aoi = "basin_4"
         )
@@ -97,34 +103,27 @@ list(
   ),
   tar_target(
     name = df_aoi_zonal,
-    command = imerg_zonal(fp_urls = urls,aoi = gdf_aoi_merged)
+    command = imerg_zonal(fp_urls = urls, aoi = gdf_aoi_merged)
   ),
-
-tar_target(
-  name = df_aoi_zonal_roll_long,
-  command = list_rbind(df_aoi_zonal) |> 
-    roll_zonal_stats() |> 
-    add_smoothed_mean(k=10)
-),
-tar_target(
-  name = df_quantiles,
-  command = df_aoi_zonal_roll_long |> 
-    yearly_max() |> 
-    grouped_quantile_summary(
-      x= "value",
-      grp_vars = c("aoi","name"),
-      rps= 1:10
-    )
-),
-tar_target(
-  name = df_thresholds,
-  command = df_quantiles |> 
-    filter(
-      aoi == "basin_4",
-      name == "3d",
-      rp == 5
-    )
-  
-)
-  
+  tar_target(
+    name = df_aoi_zonal_roll_long,
+    command = list_rbind(df_aoi_zonal) |>
+      roll_zonal_stats() |>
+      add_smoothed_mean(k = 10)
+  ),
+  tar_target(
+    name = df_quantiles,
+    command = df_aoi_zonal_roll_long |>
+      yearly_max() |>
+      grouped_quantile_summary(
+        x = "value",
+        grp_vars = c("aoi", "name"),
+        rps = 1:10
+      )
+  ),
+  tar_target(
+    name = df_thresholds,
+    command = select_final_thresholds(df_quantiles, write_blob = TRUE),
+    description = "Select final thresholds based on 5 year RP of 3d rainfall values for the AOI (Basin 4 merged and subset)"
+  )
 )
