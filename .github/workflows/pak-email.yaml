@@ -10,9 +10,9 @@ on:
           options:
             - "TRUE"
             - "FALSE"  
-  # schedule:
-  #   - cron: '10 8-23/3 * * *' # start at 8:10 AM run every 3 hours until midnight
-  #   - cron: '0 0,3,6 * * *'   # then run at midnight, 3 am, 6 am
+  schedule:
+    - cron: '30 15 * * *' # start at 8:10 AM run every 3 hours until midnight
+    
 jobs:
   monitor:
     runs-on: ubuntu-latest
