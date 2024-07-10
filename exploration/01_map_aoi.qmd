@@ -1,0 +1,751 @@
+---
+title: Pakistan AOI Selection & Historical Rainfall Analysis
+subtitle: Flood Impact Sindh Province
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    self-contained: true
+    embed-resoures: true
+    smooth-scroll: true
+execute:
+  include: true
+  echo: true
+  warning: false
+  message: false
+  eval: true
+  results: "asis"
+  out.width: "100%"
+  code-fold: true
+editor: visual
+---
+
+## Intro
+
+**background/objective:** desire to monitor rainfall over riverine areas in the Sindh province of Pakistan. If we can detect large rainfall events with high probability of flooding (in real time) we can shorten disbursement times for funding allocations.
+
+The goal of this document is to:
+
+1.  Explore potential areas of interest/analyses to monitor rainfall with regards to flood impact in Sindh province, Pakistan.
+2.  Plot historical rainfall and RP-based thresholds over selected AOI.
+
+## AOI Mapping
+
+Below overlay the Pakistan boundary, Sindh Province (admin 1) and the [global hydrosheds hydrobasins dataset](https://www.hydrosheds.org/products/hydrobasins) at levels 3 & 4.
+
+-   The Sindh province in Red
+-   You can **toggle** basin levels 3 & 4
+
+```{r}
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(janitor)
+library(gghdx)
+library(glue)
+library(ggiraph)
+library(geoarrow)
+gghdx()
+
+
+box::use(../R/utils[...])
+box::use(../R/tar_load_basins[...])
+
+
+gdf_basins <- load_basins()
+lgdf_basins<- split(gdf_basins,gdf_basins$level)
+
+gdf_adm1 <- download_fieldmaps_sf(iso3="pak",layer = "pak_adm1")
+gdf_adm0 <- download_fieldmaps_sf(iso3="pak",layer = "pak_adm0")
+```
+
+```{r}
+
+gdf_basins3_pak <- lgdf_basins$`03`[gdf_adm0,]
+gdf_basins4_pak <- lgdf_basins$`04`[gdf_adm0,]
+
+indus_basin3_id <- 4030033640
+
+gdf_indus_bas3 <- gdf_basins3_pak |> 
+  filter(hybas_id == indus_basin3_id) 
+
+gdf_indus_bas4<- gdf_basins4_pak[gdf_indus_bas3,]
+
+# gdf_indus_bas4$hybas_id |> datapasta::vector_paste_vertical()
+indus_bas4_id <- c(
+  # 4040033430,
+  4040033440,
+  4040033640,
+  4040879050,
+  4040879040,
+  4040794590,
+  4040794730,
+  4040648310,
+  4040648320,
+  4040607260,
+  4040607420,
+  4040033650
+  # 4040462930,
+  # 4040545690
+)
+
+gdf_indus_bas4 <- gdf_indus_bas4 |> 
+  filter(
+    hybas_id %in% indus_bas4_id
+  ) 
+
+gdf_adm1_sind <-  gdf_adm1 |> 
+  clean_names() |> 
+  filter(
+    adm1_en == "Sindh"
+  ) 
+
+
+```
+
+```{r}
+
+pal_length <- gdf_indus_bas4$hybas_id |> length()
+bas4_pal <- colorFactor(RColorBrewer::brewer.pal(n = pal_length, name = "Set3") ,gdf_indus_bas4$hybas_id )
+
+
+leaflet() |> 
+  addTiles(group = "OSM (default)") %>%
+  addProviderTiles(leaflet::providers$Esri.WorldShadedRelief,"Esri Hillshade") |> 
+  addPolygons(data= gdf_adm0, color = "black", fillColor = NA, fillOpacity = 0, weight = 2) |> 
+  addPolygons(
+    data= gdf_adm1_sind, 
+    color = "red", 
+    fillColor = "red",
+    opacity = 0.7, 
+    weight = 2,
+    fillOpacity = 0.5
+  ) |> 
+  addPolygons(data = gdf_indus_bas3,
+              fillColor = "lightblue",
+              fillOpacity = 0.5,
+              weight =2, group = "Basin 3") |> 
+  addPolygons(
+    data = gdf_indus_bas4 ,
+    fillColor = ~bas4_pal(hybas_id),
+    color = ~bas4_pal(hybas_id),
+    fillOpacity = 0.7, 
+    opacity =1,    weight = 3,
+    label=~hybas_id, 
+    group = "Basin 4") |>
+  addLayersControl(
+    baseGroups = c("Esri Hillshade","OSM" ),
+    overlayGroups = c("Basin 4","Basin 3" ),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+
+
+```
+
+## AOI Selection
+
+We have various options area of analysis levels for rainfall analysis/monitoring
+
+1.  Use the entire Indus river basin at level 3
+2.  Clip the Indus river basin to a smaller area that includes just Sindh province and areas just upstream using the basin level 3 files
+3.  Monitor over the Sindh province
+
+To enhance the hydrological properties of the area selection let's stick with options 1 & 2 which retain some basin characteristics. Below we have filtered the basin level 4s to just include riverine areas in Sindh province and the two adjacent basins upstream of the basin.
+
+```{r}
+
+sind_indus_bas4_id <- c(
+  4040033440,
+  4040033650,
+  4040879040,
+  4040879050,
+  4040033440,
+  4040033640
+)
+
+gdf4_indus_bas4_filt <- gdf_indus_bas4 |>
+  filter(hybas_id %in%sind_indus_bas4_id)
+
+leaflet() |> 
+  addTiles(group = "OSM (default)") %>%
+  addProviderTiles(leaflet::providers$Esri.WorldShadedRelief,"Esri Hillshade") |> 
+  addPolygons(data= gdf_adm0, color = "black", fillColor = NA, fillOpacity = 0, weight = 2) |> 
+  addPolygons(
+    data= gdf_adm1_sind, 
+    color = "red", 
+    fillColor = "red",
+    opacity = 0.7, 
+    weight = 2,
+    fillOpacity = 0.5
+  ) |> 
+  addPolygons(data = gdf_indus_bas3,fillColor = "lightblue",fillOpacity = 0.5, weight =2, group = "Basin 3") |> 
+  addPolygons(
+    data = gdf4_indus_bas4_filt,
+    fillColor = ~bas4_pal(hybas_id),
+    color = ~bas4_pal(hybas_id),
+    fillOpacity = 0.7, 
+    opacity =1,    weight = 3,
+    label=~hybas_id, 
+    group = "Basin 4") |>
+  
+  addLayersControl(
+    baseGroups = c("Esri Hillshade","OSM" ),
+    overlayGroups = c("Basin 4","Basin 3" ),
+    options = layersControlOptions(collapsed = FALSE)
+  ) |>   hideGroup("Basin 3")
+
+
+```
+
+Below we have dissolved the selected basins from basin level 4 into one polygon/aoi and overlaid that on top of basin level 3. Thus we have two decent candidates for AOI exploration:
+
+```{r}
+gdf_indus_bas4_filt_dis <-  gdf4_indus_bas4_filt |>
+  summarise()
+
+leaflet() |> 
+  addTiles(group = "OSM (default)") %>%
+  addProviderTiles(leaflet::providers$Esri.WorldShadedRelief,"Esri Hillshade") |> 
+  addPolygons(data= gdf_adm0, color = "black", fillColor = NA, fillOpacity = 0, weight = 2) |> 
+  addPolygons(
+    data= gdf_adm1_sind, 
+    color = "red", 
+    fillColor = "red",
+    opacity = 0.7, 
+    weight = 2,
+    fillOpacity = 0.5
+  ) |> 
+  addPolygons(
+    data = gdf_indus_bas3,
+    fillColor = "lightblue",
+    fillOpacity = 0.5,
+    weight =2,
+    group = "Option 1: Indus Basin (level 3)"
+    
+  ) |> 
+  addPolygons(
+    data = gdf_indus_bas4_filt_dis,
+    fillColor ="lightyellow",
+    color = "lightyellow",
+    fillOpacity = 0.7, 
+    opacity =1,    weight = 3,
+    group = "Option 2: Indus Basin Subset"
+  ) |>
+  addLayersControl(
+    baseGroups = c("Esri Hillshade","OSM" ),
+    overlayGroups = c("Option 2: Indus Basin Subset","Option 1: Indus Basin (level 3)" ),
+    options = layersControlOptions(collapsed = FALSE)
+  ) 
+```
+
+## Data Source Options
+
+To monitor rainfall there are several global data sets to be considered
+
+1.  CHIRPS
+2.  IMERG
+3.  ERA5
+
+IMERG is probably the most suitable of those 3 for near real time analysis because it is published everyday at 3 pm UTC. Whereas CHIRPS & ERA5 have significant delays.
+
+Therefore we go with IMERG
+
+## Historical Data & Thresholds
+
+-   Below we plot the historical rainfall time series at 1-day, 2-day, and 3-day total cumulative rainfalls.
+-   The red lines represent threshold values associates with return periods 3, 4, 5
+
+*you can hover your mouse over the plots to display more data.*
+
+```{r}
+
+df_cerf <- tibble::tribble(
+  ~Application.Code,   ~Country, ~Window, ~Emergency.Type, ~Date.of.Original.Submission, ~Year, ~Amount.Approved, ~Date.of.ERC.Endorsement, ~Date.of.First.Project.Disbursement, ~Date.of.Last.Project.Disbursement,
+  "22-RR-PAK-54917", "Pakistan",    "RR",         "Flood",                 "26/08/2022", 2022L,         10071433,             "19/08/2022",                        "02/09/2022",                       "19/09/2022",
+  "20-RR-PAK-45179", "Pakistan",    "RR",         "Flood",                 "16/10/2020", 2020L,          2999886,             "05/10/2020",                        "28/10/2020",                       "30/10/2020",
+  "12-RR-PAK-9149", "Pakistan",    "RR",         "Flood",                 "05/10/2012", 2012L,          9920625,                "9/28/12",                        "24/10/2012",                       "19/11/2012",
+  "11-RR-PAK-12814", "Pakistan",    "RR",         "Flood",                 "21/09/2011", 2011L,         17633514,                "9/14/11",                        "05/10/2011",                       "15/11/2011",
+  "10-RR-PAK-13630", "Pakistan",    "RR",         "Flood",                 "23/08/2010", 2010L,         13381573,                "8/16/10",                        "07/09/2010",                       "01/10/2010",
+  "10-RR-PAK-8918", "Pakistan",    "RR",         "Flood",                 "27/09/2010", 2010L,         12003247,                "9/20/10",                        "04/11/2010",                       "29/11/2010",
+  "10-RR-PAK-8880", "Pakistan",    "RR",         "Flood",                 "06/08/2010", 2010L,         16595962,                "7/29/10",                        "18/08/2010",                       "25/08/2010",
+  "08-RR-PAK-8774", "Pakistan",    "RR",         "Flood",                 "25/08/2008", 2008L,          6949446,                "8/18/08",                        "12/09/2008",                       "19/11/2008",
+  "07-RR-PAK-13627", "Pakistan",    "RR",         "Flood",                 "11/09/2007", 2007L,          1408851,                 "9/4/07",                        "21/09/2007",                       "21/09/2007",
+  "07-RR-PAK-8725", "Pakistan",    "RR",         "Flood",                 "25/06/2007", 2007L,          4298114,                "6/18/07",                        "17/07/2007",                       "05/09/2007"
+) |> 
+  clean_names()
+
+df_cerf <- df_cerf |> 
+  select(
+    application_code,
+    date_of_original_submission,date_of_erc_endorsement
+  ) |> 
+  
+  mutate(
+    date_erc = if_else(row_number() %in% c(1,2),dmy(date_of_erc_endorsement),mdy(date_of_erc_endorsement))
+  )
+```
+
+```{r}
+
+targets::tar_load(df_aoi_zonal,store = "../_targets")
+
+df_aoi_zonal <- list_rbind(
+  df_aoi_zonal
+) |> 
+  tibble()
+
+df_roll_long <-  df_aoi_zonal |> 
+  rename(
+    `1d` = mean
+  ) |>
+  group_by(aoi) |> 
+  arrange(aoi,date) |> 
+  mutate(
+    `2d` = zoo::rollsum(x = `1d`, k=2, fill = NA, align = "right"),
+    `3d` = zoo::rollsum(x = `1d`, k=3, fill = NA, align = "right"),
+  ) |> 
+  pivot_longer(cols = c("1d","2d","3d"))  
+
+## Need to do work looking at anomalie
+
+df_roll_long <- df_roll_long |> 
+  arrange(aoi, name, date) |> 
+  group_by(
+    aoi, name
+  ) |> 
+  mutate(
+    doy = day(date),
+    smooth_10d = zoo::rollmean(x = value, k=10, fill = NA, align = "right"),
+  ) |> 
+  group_by(
+    doy,
+    .add=TRUE
+  ) |> 
+  mutate(
+   avg_smooth =  mean(smooth_10d),
+   anom = smooth_10d - avg_smooth,
+   std_anom = anom/sd(smooth_10d)
+  ) |> ungroup()
+```
+
+```{r anomalyHistos, eval = FALSE , echo = FALSE}
+
+df_roll_long |> 
+  ggplot(
+    aes(x=anom)
+  )+
+  geom_histogram(bins=100)+
+  facet_grid(
+    cols = vars(aoi),
+    rows = vars(name)
+  )
+
+df_roll_long |> 
+  ggplot(
+    aes(x=std_anom)
+  )+
+  geom_histogram(bins=100)+
+  facet_grid(
+    cols = vars(aoi),
+    rows = vars(name)
+  )
+```
+
+```{r}
+df_roll_max <- df_roll_long |> 
+  mutate(
+    yr_date = floor_date(date, "year")
+  ) |> 
+  group_by(aoi,yr_date,name) |> 
+  summarise(
+    value = max(value,na.rm = TRUE),
+    anom = max(anom,na.rm = TRUE),
+    std_anom = max(std_anom,na.rm = TRUE),
+    # std_anom = max(std_anom, na.rm = TRUE)
+  )
+
+
+# function 
+grouped_quantile_summary <- function(df,
+                                     x ,
+                                     grp_vars,
+                                     rps = c(1:10)) {
+  df %>%
+    group_by(
+      across(all_of(grp_vars))
+    ) %>%
+    reframe(
+      rp = rps,
+      q = 1 / rp,
+      q_val = quantile(.data[[x]], probs = 1-(1 / rp))
+    )
+}
+
+df_rp_thresholds <- df_roll_max |> 
+  grouped_quantile_summary(
+    x= "value",
+    grp_vars = c("aoi","name"),
+    rps= 1:10
+  )
+
+
+
+df_rp_threshold_filt<- df_rp_thresholds |> 
+  filter(rp %in% c(3,4,5)) |> 
+  select(aoi,name,rp, threshold = q_val) 
+
+
+
+df_roll_thresholds <- df_roll_long |> 
+  left_join(
+    df_rp_threshold_filt |> 
+      pivot_wider(
+        names_from = rp,
+        values_from = threshold,names_glue = "rp_{rp}"
+      )
+  ) |> 
+  mutate(
+    flag_cat = case_when(
+      value >= rp_5 ~ "≥ 5 year event",
+      value >= rp_4 ~ "≥ 4 year event",
+      value >= rp_3 ~ "≥ 3 year event",
+      .default = "< 3 year event"
+    )
+  )
+
+
+
+
+p_historical <- pmap(
+  list(
+    split(df_roll_thresholds,df_roll_thresholds$aoi),
+    split(df_rp_threshold_filt,df_rp_threshold_filt$aoi),
+    c("Indus Basin (level 3)","Indus Basin Subset")
+  ),
+  \(df_historical,df_thresholds,p_title){
+    df_historical |>  
+      ggplot(
+      )+
+      geom_line(
+        data= df_historical,
+        aes(x= date, y = value),
+        alpha= 0.5, color="grey")+
+      geom_vline_interactive(
+        data= df_cerf,
+        aes(xintercept = date_erc, tooltip = glue("Date ERC approval: {date_erc}")),
+        color = "black"
+      )+
+      geom_point_interactive(
+        data = df_historical |> 
+          filter(flag_cat!= "< 3 year event"),
+        aes(
+          x= date,
+          y = value,
+          color = flag_cat,
+          alpha= flag_cat,
+          tooltip =glue("Date:{date}
+                      mm: {round(value,0)}")
+        ),
+        show.legend = c(color = TRUE, size= FALSE,alpha= FALSE)
+      )+
+      scale_alpha_manual(values = c(0.2,1,1,1))+
+      scale_size_manual(values = c(2,3,3,3))+
+      scale_color_brewer(palette = "YlOrRd",n=4, direction =1)+
+      scale_x_date(
+        date_breaks = "1 year",
+        date_labels = "%y",
+        limits = c(min(df_historical$date), max = max(df_historical$date)),
+        expand = c(0,0)
+      )+
+      
+      
+      geom_hline_interactive(
+        data= df_thresholds |> 
+          rename(value= threshold),
+        aes( yintercept= value,
+             tooltip = glue("RP: {rp}
+                        Threshold: {round(value,1)} mm")
+        ), 
+        color = "tomato",
+        linetype= "dashed"
+      )+
+      labs(
+        title = p_title,
+        subtitle = "Historical rainfall with RP thresholds (red) and CERF allocation dates (black)",
+        y= "rainfall"
+      )+
+      facet_wrap(
+        ~name,
+        scales = "free_y",ncol = 1
+      )+
+      theme(
+        legend.title = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x= element_text(angle =90)
+      )
+    
+    
+  }
+)
+
+
+```
+
+```{r anomPlot, eval=FALSE, echo=FALSE}
+
+df_rp_anom_thresholds <- df_roll_max |> 
+  grouped_quantile_summary(
+    x= "anom",
+    grp_vars = c("aoi","name"),
+    rps= 1:10
+  )
+
+df_rp_anom_threshold_filt <- df_rp_anom_thresholds |> 
+  filter(rp %in% c(3,4,5)) |> 
+  select(aoi,name,rp, threshold = q_val) 
+
+# do the same, but to the anomaly values
+df_anom_roll_thresholds <- df_roll_long |> 
+  left_join(
+    df_rp_anom_threshold_filt |> 
+      pivot_wider(
+        names_from = rp,
+        values_from = threshold,names_glue = "rp_{rp}"
+      )
+  ) |> 
+  mutate(
+    flag_cat = case_when(
+      anom >= rp_5 ~ "≥ 5 year event",
+      anom >= rp_4 ~ "≥ 4 year event",
+      anom >= rp_3 ~ "≥ 3 year event",
+      .default = "< 3 year event"
+    )
+  )
+
+
+### Plot Anomaly Data #######
+
+p_anom_historical <- pmap(
+  list(
+    split(df_anom_roll_thresholds,df_anom_roll_thresholds$aoi),
+    split(df_rp_anom_threshold_filt,df_rp_anom_threshold_filt$aoi),
+    c("Indus Basin (level 3)","Indus Basin Subset")
+  ),
+  \(df_historical,df_thresholds,p_title){
+    df_historical |>  
+      ggplot()+
+      geom_line(
+        data= df_historical,
+        aes(x= date, y = anom),
+        alpha= 0.5, color="grey")+
+      geom_vline_interactive(
+        data= df_cerf,
+        aes(xintercept = date_erc, tooltip = glue("Date ERC approval: {date_erc}")),
+        color = "black"
+      )+
+      geom_point_interactive(
+        data = df_historical |> 
+          filter(flag_cat!= "< 3 year event"),
+        aes(
+          x= date,
+          y = anom,
+          color = flag_cat,
+          alpha= flag_cat,
+          tooltip =glue("Date:{date}
+                      mm: {round(value,0)}")
+        ),
+        show.legend = c(color = TRUE, size= FALSE,alpha= FALSE)
+      )+
+      scale_alpha_manual(values = c(0.2,1,1,1))+
+      scale_size_manual(values = c(2,3,3,3))+
+      scale_color_brewer(palette = "YlOrRd",, direction =1)+
+      scale_x_date(
+        date_breaks = "1 year",
+        date_labels = "%y",
+        limits = c(min(df_historical$date), max = max(df_historical$date)),
+        expand = c(0,0)
+      )+
+      scale_y_continuous(trans = scales::pseudo_log_trans())
+      
+      
+      geom_hline_interactive(
+        data= df_thresholds |> 
+          rename(value= threshold),
+        aes( yintercept= value,
+             tooltip = glue("RP: {rp}
+                        Threshold: {round(value,1)} mm")
+        ), 
+        color = "tomato",
+        linetype= "dashed"
+      )+
+      labs(
+        title = p_title,
+        subtitle = "Historical rainfall with RP thresholds (red) and CERF allocation dates (black)",
+        y= "rainfall"
+      )+
+      facet_wrap(
+        ~name,
+        scales = "free_y",ncol = 1
+      )+
+      theme(
+        legend.title = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x= element_text(angle =90)
+      )
+    
+    
+  }
+)
+
+
+p_anom_historical$`basin_3`
+
+```
+
+```{r}
+girafe(ggobj = p_historical$basin_3)
+```
+
+Summary of plot below:
+
+Since 2004, the Indus basin subset has experienced seven (I considered clustered events within three days as one) 1-in-5 year events based on three-day accumulated rainfall data. Out of these events, CERF responded with allocations to all but one of the flooding incidents, which occurred in 2023. Additionally, CERF made one allocation in response to a 1-in-4 year event in 2020 and three allocations to flooding events with return periods of less than 1 in 3 years.
+
+```{r}
+girafe(ggobj = p_historical$basin_4)
+```
+
+```{r}
+FP_EMDAT <- "/Users/zackarno/Downloads/public_emdat_custom_request_2024-06-25_b94b8026-910c-4f6c-a6ee-895c701820ad.xlsx"
+
+df_emdat <- readxl::read_excel(FP_EMDAT,sheet = "EM-DAT Data") |> 
+  clean_names()
+
+emdat_gte2003 <- df_emdat |> 
+  filter(
+    disaster_type =="Flood"
+  ) |> 
+  select(
+    matches("month|day|year"),total_deaths, no_injured,total_affected,total_damage_adjusted_000_us 
+  ) |> 
+  mutate(
+    # create date from start_year, start_month, start_day, month needs leading 0 in some cases
+    start_date = glue("{start_year}-{str_pad(start_month,2, pad = '0')}-{str_pad(replace_na(start_day,01),2, pad = '0')}") |> as_date()
+    # start_date = glue("{year}",)
+  ) |> 
+  filter(
+    year(start_date)>= 2003
+  )
+
+
+
+plot_historical <- function(impact_var){
+  pmap(
+    list(
+      split(df_roll_thresholds,df_roll_thresholds$aoi),
+      split(df_rp_threshold_filt,df_rp_threshold_filt$aoi),
+      c("Indus Basin (level 3)","Indus Basin Subset")
+    ),
+    \(df_historical,df_thresholds,p_title){
+      df_historical
+      
+      max_rainfall <- max(df_historical$value, na.rm = T)
+      max_impact <- max(emdat_gte2003[[impact_var]], na.rm = T)
+      scale_y <- max_impact / max_rainfall
+      
+      impact_var_formatted <- str_to_title(str_replace(impact_var,"_"," "))
+      
+      
+      df_historical |>  
+        ggplot()+
+        geom_point_interactive(
+          data= emdat_gte2003,
+          aes(
+            x=start_date,  
+            y= !!sym(impact_var)*(1 / scale_y),
+            size= !!sym(impact_var),
+            tooltip =glue("Total Deaths: {total_deaths}")
+          ),
+          alpha=1,
+          color = "lightblue",
+          show.legend = c(size=FALSE,color=TRUE)
+        )+
+        geom_line(
+          data= df_historical,
+          aes(x= date, y = value),
+          alpha= 0.5, color="grey")+
+        geom_vline_interactive(
+          data= df_cerf,
+          aes(xintercept = date_erc, tooltip = glue("Date ERC approval: {date_erc}")),
+          color = "black"
+        )+
+        geom_point_interactive(
+          data = df_historical |> 
+            filter(flag_cat!= "< 3 year event"),
+          aes(
+            x= date,
+            y = value,
+            color = flag_cat,
+            alpha= flag_cat,
+            tooltip =glue("Date:{date}
+                      mm: {round(value,0)}")
+          ),
+          show.legend = c(color = TRUE, size= FALSE,alpha= FALSE)
+        )+
+        scale_alpha_manual(values = c(0.2,1,1,1))+
+        scale_color_brewer(palette = "YlOrRd",n=4, direction =1)+
+        scale_x_date(
+          date_breaks = "1 year",
+          date_labels = "%y",
+          limits = c(min(df_historical$date), max = max(df_historical$date)),
+          expand = c(0,0)
+        )+
+        scale_y_continuous(
+          sec.axis = sec_axis(transform = ~ . * scale_y, name = glue("{impact_var_formatted} (EMDAT)")),
+          expand = c(0,20)
+        ) +
+        geom_hline_interactive(
+          data= df_thresholds |> 
+            rename(value= threshold),
+          aes( yintercept= value,
+               tooltip = glue("RP: {rp}
+                        Threshold: {round(value,1)} mm")
+          ), 
+          color = "tomato",
+          linetype= "dashed"
+        )+
+        labs(
+          title = p_title,
+          subtitle = "Historical rainfall with RP thresholds (red) and CERF allocation dates (black)",
+          y= "rainfall"
+        )+
+        facet_wrap(
+          ~name,
+          scales = "free_y",ncol = 1
+        )+
+        theme(
+          legend.title = element_blank(),
+          axis.title.x = element_blank(),
+          axis.text.x= element_text(angle =90)
+        )
+      
+    }     
+    
+  )
+}
+
+p_historical_w_deaths <- plot_historical(impact_var = "total_deaths")
+# plot_historical(impact_var = "total_affected")
+# plot_historical(impact_var = "total_damage_adjusted_000_us")
+
+```
+
+With `Total Deaths` from [EMDAT database](https://public.emdat.be/data) shown as light blue bubbles
+
+```{r}
+girafe(ggobj = p_historical_w_deaths$basin_3)
+```
+
+```{r}
+girafe(ggobj = p_historical_w_deaths$basin_4)
+```
