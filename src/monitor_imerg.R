@@ -53,8 +53,8 @@ BAS4_ID_AOI <- c(
 # separately. I think it could be due to a newer version of gdal on runner w/
 # slighly different requirements for accessing azure storage.
 
-# Sys.setenv(AZURE_SAS = Sys.getenv("DSCI_AZ_SAS_DEV"))
-# Sys.setenv(AZURE_STORAGE_ACCOUNT = Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
+Sys.setenv(AZURE_SAS = Sys.getenv("DSCI_AZ_SAS_DEV"))
+Sys.setenv(AZURE_STORAGE_ACCOUNT = Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
 
 
 # Create container end points ---------------------------------------------
@@ -163,10 +163,6 @@ df_zonal_processed <- df_zonal |>
 
 # Plot --------------------------------------------------------------------
 
-max_rainfall <- max(df_zonal_processed$`3d`, na.rm = TRUE)
-
-y_max <- if_else(df_thresholds$q_val >= max_rainfall, df_thresholds$q_val + 10, max_rainfall + 10)
-
 p <- df_zonal_processed |>
   filter(!is.na(`3d`)) |>
   ggplot(
@@ -195,7 +191,7 @@ p <- df_zonal_processed |>
     y = "Precipitation (mm)",
     caption = glue("Data source: IMERG\nProduced {Sys.Date()} ")
   ) +
-  scale_y_continuous(limits = c(0, y_max), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(0, NA), expand = expansion(add = c(0, 10)))+
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_text(size = 14),
