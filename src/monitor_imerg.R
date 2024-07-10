@@ -53,8 +53,8 @@ BAS4_ID_AOI <- c(
 # separately. I think it could be due to a newer version of gdal on runner w/
 # slighly different requirements for accessing azure storage.
 
-Sys.setenv(AZURE_SAS = Sys.getenv("DSCI_AZ_SAS_DEV"))
-Sys.setenv(AZURE_STORAGE_ACCOUNT = Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
+# Sys.setenv(AZURE_SAS = Sys.getenv("DSCI_AZ_SAS_DEV"))
+# Sys.setenv(AZURE_STORAGE_ACCOUNT = Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
 
 
 # Create container end points ---------------------------------------------
