@@ -227,13 +227,15 @@ if(is_test_email){
   to_email <- df_receps[df_receps$test,"Email.Address"]
 } else if(!is_test_email){
   if(is_alert){
+    
     to_email <- df_receps |> 
       filter(
-        Frequency == "alerts"
+        Frequency == c("alerts","daily")
       ) |> 
       pull(
         Email.Address
       )
+    
   } else if(!is_alert) {
     to_email <- df_receps |> 
       filter(
@@ -250,7 +252,7 @@ render_email(
 ) %>%
   smtp_send(
     from = "data.science@humdata.org",
-    to = to_email,
+    to = unique(to_email),
     subject = email_txt$subject,
     credentials = email_creds
   )
