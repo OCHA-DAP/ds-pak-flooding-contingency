@@ -2,7 +2,6 @@
 install.packages(
   c("terra",
     "arrow",
-    "remotes",
     "gghdx",
     "geoarrow",
     "sf",
@@ -21,4 +20,4 @@ install.packages(
     "zoo",
     "AzureStor")
 )
-devtools::install_github("OCHA-DAP/cumulus")
+remotes::install_github("OCHA-DAP/cumulus")
