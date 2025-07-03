@@ -4,6 +4,7 @@
 install.packages(
   c("terra",
     "arrow",
+    "remotes",
     "gghdx",
     "geoarrow",
     "sf",
@@ -13,6 +14,7 @@ install.packages(
     "stringr",
     "gghdx",
     "tidyr",
+    "logger",
     "glue",
     "blastula",
     "exactextractr",
@@ -21,3 +23,4 @@ install.packages(
     "zoo",
     "AzureStor")
 )
+devtools::install_github("OCHA-DAP/cumulus")
