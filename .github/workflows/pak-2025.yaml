@@ -78,7 +78,7 @@ jobs:
         if: steps.cache-r-deps.outputs.cache-hit != 'true'
         run: |
           Rscript -e 'install.packages("remotes")'
-          Rscript .github/depends.R
+          Rscript .github/depends_email.R
     
       # - name: Run R-script-test-env-vars
       #   shell: bash
