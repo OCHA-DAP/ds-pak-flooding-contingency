@@ -14,13 +14,14 @@ install.packages(
     "stringr",
     "gghdx",
     "tidyr",
-    "logger",
     "glue",
     "blastula",
     "exactextractr",
     "rlang",
     "box",
     "zoo",
-    "AzureStor")
+    "AzureStor",
+    "logger"
+    )
 )
 remotes::install_github("OCHA-DAP/cumulus")
