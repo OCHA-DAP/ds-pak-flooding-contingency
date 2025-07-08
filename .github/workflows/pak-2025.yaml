@@ -5,17 +5,14 @@ name: PAK 2025 Contingency Monitoring.
 
 on:
   workflow_dispatch:
-    inputs:
-      EMAIL_WHO: 
-        required: true
-        type: choice
-        default: 'core_developer'
-        options:
-          - core_developer
-          - developers
-          - internal_chd
-          - internal_ocha
-          - full_list
+      inputs:
+        TEST_EMAIL:
+          required: true
+          type: choice
+          default: "TRUE"
+          options:
+            - "TRUE"
+            - "FALSE"  
           
 jobs:
   monitor:
@@ -84,6 +81,6 @@ jobs:
       #   shell: bash
       #   run: Rscript ./src/monitoring_2025/test_gha_settings.R
       # 
-      # - name: Run R-script-cadc-2025-trigger-monitoring
-      #   shell: bash
-      #   run: Rscript ./src/monitoring_2025/update_activation_status.R
+      - name: Run R-script-cadc-2025-trigger-monitoring
+        shell: bash
+        run: Rscript ./src/monitoring_imerge_2025a.R

@@ -1,23 +1,32 @@
-box::use(terra[...])
-box::use(arrow[...])
-box::use(gghdx[...])
-box::use(geoarrow[...])
-box::use(sf[...])
-box::use(ggplot2[...])
-box::use(lubridate[...])
-box::use(dplyr[...])
-box::use(stringr[...])
-box::use(gghdx[...])
-box::use(tidyr[...])
-box::use(glue[...])
-box::use(blastula[...])
-box::use(exactextractr)
-box::use(AzureStor)
-box::use(zoo[...])
+box::use(
+  terra[...],
+  arrow[...],
+  gghdx[...],
+  geoarrow[...],
+  sf[...],
+  ggplot2[...],
+  lubridate[...],
+  dplyr[...],
+  stringr[...],
+  gghdx[...],
+  tidyr[...],
+  glue[...],
+  blastula[...],
+  zoo[...]
+  
+  )
 
-box::use(../R/utils[azure_endpoint_url,load_proj_contatiners])
+box::use(
+  exactextractr,
+  AzureStor, 
+  cumulus
+)
+
+
+# box::use(../R/utils[azure_endpoint_url,load_proj_contatiners])
 box::use(btools=../src/email_utils)
 gghdx()
+tar_source()
 
 
 is_test_email <- as.logical(Sys.getenv("TEST_EMAIL", unset = TRUE))
@@ -53,50 +62,75 @@ BAS4_ID_AOI <- c(
 # separately. I think it could be due to a newer version of gdal on runner w/
 # slighly different requirements for accessing azure storage.
 
-# Sys.setenv(AZURE_SAS = Sys.getenv("DSCI_AZ_SAS_DEV"))
+Sys.setenv(AZURE_SAS = Sys.getenv("DSCI_AZ_BLOB_PROD_SAS"))
 # Sys.setenv(AZURE_STORAGE_ACCOUNT = Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
+Sys.setenv(AZURE_STORAGE_ACCOUNT = "imb0chd0prod")
 
 
 # Create container end points ---------------------------------------------
-pc <- load_proj_contatiners()
+# pc <- load_proj_contatiners()
 
 # Load thresholds data.frame ----------------------------------------------
 
 
-tf <- tempfile(fileext = "csv")
+# tf <- tempfile(fileext = "csv")
+# 
+# AzureStor$download_blob(
+#   container = pc$PROJECTS_CONT,
+#   src = "ds-contingency-pak-floods/pak_monitoring_email_receps.csv",
+#   dest = tf
+# )
 
-AzureStor$download_blob(
-  container = pc$PROJECTS_CONT,
-  src = "ds-contingency-pak-floods/pak_monitoring_email_receps.csv",
-  dest = tf
+df_receps <- cumulus$blob_read(
+  container = "projects",
+  name = "ds-contingency-pak-floods/pak_monitoring_email_receps.csv"
+  
 )
-
-df_receps <- read.csv(tf)
+# df_receps <- read.csv(tf)
 df_receps <- df_receps |> 
   mutate(
     Frequency = trimws(tolower(Frequency))
   )
+df_receps <- df_receps |> 
+  filter(test)
 
 # Load thresholds data.frame ----------------------------------------------
 
+# 
+# tf <- tempfile(fileext = ".parquet")
+# 
+# AzureStor$download_blob(
+#   container = pc$PROJECTS_CONT,
+#   src = "ds-contingency-pak-floods/imerg_flooding_thresholds.parquet",
+#   dest = tf
+# )
 
-tf <- tempfile(fileext = ".parquet")
+df_thresholds_24 <- cumulus$blob_read(
+    container = "projects",
+    name =  "ds-contingency-pak-floods/imerg_flooding_thresholds.parquet",
+  )
+df_thresholds_25 <- cumulus$blob_read(
+    container = "projects",
+    name =  "ds-contingency-pak-floods/imerg_flooding_thresholds_2025.parquet",
+  )
 
-AzureStor$download_blob(
-  container = pc$PROJECTS_CONT,
-  src = "ds-contingency-pak-floods/imerg_flooding_thresholds.parquet",
-  dest = tf
-)
 
-df_thresholds <- read_parquet(tf)
+# df_thresholds <- read_parquet(tf)
 
 
 # load aoi geodata --------------------------------------------------------
 
 
 tf <- tempfile(fileext = ".parquet")
+# AzureStor$download_blob(
+#   container = pc$PROJECTS_CONT,
+#   src = "ds-contingency-pak-floods/hybas_asia_basins_03_04.parquet",
+#   dest = tf
+# )
+
+pc <- cumulus$blob_containers(stage ="dev")
 AzureStor$download_blob(
-  container = pc$PROJECTS_CONT,
+  container =pc$projects,
   src = "ds-contingency-pak-floods/hybas_asia_basins_03_04.parquet",
   dest = tf
 )
@@ -111,8 +145,9 @@ gdf_aoi_bas4 <- open_dataset(tf) |>
 
 
 # Load IMERG Rasters ------------------------------------------------------
-
-cog_folder_contents <- AzureStor$list_blobs(pc$GLOBAL_CONT, dir = "imerg/v7")
+# debugonce(cumulus$blob_containers)
+prod_containers <- cumulus$blob_containers(stage = "prod",write_access = FALSE)
+cog_folder_contents <- AzureStor$list_blobs(prod_containers$raster, dir = "imerg/daily/late/v7/processed")
 
 cog_tbl <- cog_folder_contents |>
   mutate(
@@ -121,7 +156,7 @@ cog_tbl <- cog_folder_contents |>
 
 last_10_dates <- seq(max(cog_tbl$date) - 9, max(cog_tbl$date), by = "day")
 
-az_prefix <- "/vsiaz/global/"
+az_prefix <- "/vsiaz/raster/"
 
 az_urls <- cog_tbl |>
   filter(
@@ -171,7 +206,7 @@ p <- df_zonal_processed |>
   geom_line() +
   geom_point() +
   geom_hline(
-    yintercept = df_thresholds$q_val,
+    yintercept = df_thresholds_25$q_val,
     color = hdx_hex("tomato-hdx"),
     linetype = "dashed"
   ) +
@@ -224,35 +259,133 @@ email_creds <- creds_envvar(
 )
 
 if(is_test_email){
-  to_email <- df_receps[df_receps$test,"Email.Address"]
+  to_email <- df_receps[df_receps$test,"Email Address"]
 } else if(!is_test_email){
   if(is_alert){
-    
     to_email <- df_receps |> 
       filter(
-        Frequency == c("alerts","daily")
+        Frequency == "alerts"
       ) |> 
       pull(
         Email.Address
       )
-    
   } else if(!is_alert) {
     to_email <- df_receps |> 
       filter(
         Frequency == "daily"
       ) |> 
-      pull(Email.Address)
+      pull(`Email Address`)
     
   }
 }
 
-render_email(
+email_knitted <- render_email(
   input = email_rmd_fp,
   envir = parent.frame()
-) %>%
-  smtp_send(
-    from = "data.science@humdata.org",
-    to = unique(to_email),
-    subject = email_txt$subject,
-    credentials = email_creds
-  )
+) 
+
+smtp_send(
+  email_knitted,
+  from = "data.science@humdata.org",
+  to = to_email,
+  subject = email_txt$subject,
+  credentials = email_creds
+)
+
+
+
+# one-off -----------------------------------------------------------------
+
+
+
+gdf_adm1 <- download_fieldmaps_sf(iso3="pak",layer = "pak_adm1")
+adm1_pcode <- gdf_adm1 |> 
+  filter(ADM1_EN =="Khyber Pakhtunkhwa") |> 
+  pull(ADM1_PCODE)
+con_prod <- cumulus::pg_con(stage= "prod")
+DBI:::dbListTables(con_prod)
+cumulus::pg_load_seas5_historical()
+
+df_imerg_adm1 <- dplyr::tbl(con_prod, "imerg") |> 
+  filter(
+    adm_level ==1,
+    pcode ==adm1_pcode
+    ) |> 
+  collect()
+
+
+
+  df_adm1_roll <- df_imerg_adm1 |>
+  rename(
+    `1d` = mean
+  ) |>
+  arrange( valid_date) |>
+  mutate(
+    `2d` = zoo::rollsum(x = `1d`, k = 2, fill = NA, align = "right"),
+    `3d` = zoo::rollsum(x = `1d`, k = 3, fill = NA, align = "right"),
+  ) |>
+  pivot_longer(
+    cols = c("1d", "2d", "3d"),names_to= "name",
+    values_to = "value"
+    
+    ) 
+
+  df_adm1_thresh <- df_adm1_roll |>
+    mutate(
+      yr_date = floor_date(valid_date, "year")
+    ) |> 
+    group_by(yr_date, name) |>
+    summarise(
+      value = max(value, na.rm = TRUE)
+    ) |> 
+    grouped_quantile_summary(
+      x = "value",
+      grp_vars = c( "name"),
+      rps = 1:10
+    ) |> 
+    filter(name == "3d",
+           rp ==5)
+  
+  
+  df_adm1_roll_filt <- df_adm1_roll |> 
+    filter(
+      valid_date %in%     last_10_dates[-c(1,2)],
+      name == "3d"
+    ) 
+  df_adm1_roll_filt |> 
+    ggplot(
+      aes(x= valid_date, y= value)
+    )+
+    geom_line()+
+    geom_point()+
+    geom_hline(yintercept = df_adm1_thresh$q_val,
+               color = hdx_hex("tomato-hdx"),
+               linetype = "dashed"
+    ) +
+    annotate(
+      geom = "text",
+      x = max(df_adm1_roll_filt$valid_date) - 2,
+      y = df_adm1_thresh$q_val + 5,
+      label = glue("Threshold (5 year RP value): {round(df_adm1_thresh$q_val,0)} mm"),
+      size = 6
+    ) +
+    scale_x_date(
+      date_breaks = "day", date_labels = "%b %d"
+    ) +
+    labs(
+      title = "Cumulative 3-day Precipitation",
+      subtitle = "Pakistan: Khyber Pakhtunkhwa Province",
+      y = "Precipitation (mm)",
+      caption = glue("Data source: IMERG\nProduced {Sys.Date()} ")
+    ) +
+    scale_y_continuous(limits = c(0, NA), expand = expansion(add = c(0, 10)))+
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 14),
+      axis.text.x = element_text(size = 14),
+      plot.title = element_text(size = 20),
+      plot.subtitle = element_text(size = 16)
+    )
+  
+    
+    

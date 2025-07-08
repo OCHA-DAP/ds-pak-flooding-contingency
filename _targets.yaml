@@ -1,0 +1,6 @@
+pak_imerg_2024:
+  script: _targets.R
+  store: _targets
+pak_imerg_2025:
+  script: _targets_imerg_v7.R
+  store: _targets_2025

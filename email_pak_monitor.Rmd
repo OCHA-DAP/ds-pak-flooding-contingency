@@ -31,22 +31,24 @@ knitr::opts_chunk$set(
 
 
 ```{r, class.output = "banner", echo=FALSE, include =FALSE}
-es <- azure_endpoint_url()
-# storage endpoint
-se <- AzureStor$storage_endpoint(es, sas = Sys.getenv("DSCI_AZ_SAS_DEV") )
-
-# storage container
-sc_projects <-  AzureStor$storage_container(se, "projects")
-
-# Load thresholds data.frame ----------------------------------------------
-tf <- tempfile(fileext = ".png")
-
-invisible(AzureStor$download_blob(
-  container = sc_projects, 
-  src = "ds-contingency-pak-floods/centre_banner.png",
-  dest = tf
-)
-)
+# es <- azure_endpoint_url()
+# # storage endpoint
+# se <- AzureStor$storage_endpoint(es, sas = Sys.getenv("DSCI_AZ_SAS_DEV") )
+# 
+# # storage container
+# sc_projects <-  AzureStor$storage_container(se, "projects")
+# 
+# # Load thresholds data.frame ----------------------------------------------
+# tf <- tempfile(fileext = ".png")
+# 
+# invisible(AzureStor$download_blob(
+#   container = sc_projects, 
+#   src = "ds-contingency-pak-floods/centre_banner.png",
+#   dest = tf
+#   
+# )
+# )
+tf <- cumulus$blob_read("ds-contingency-pak-floods/centre_banner.png",return_path_only = TRUE, progress_show = FALSE)
 ```
 
 ```{r addBanner}
@@ -97,17 +99,20 @@ Contact the OCHA Centre for Humanitarian Data via Leonardo Milano, Team Lead for
 
 ```{r downloadFooter, echo=FALSE, include=F}
 
-tf <- tempfile(fileext = ".png")
+# tf <- tempfile(fileext = ".png")
+# 
+# capture.output(
+#   invisible(
+#   AzureStor$download_blob(
+#   container = sc_projects, 
+#   src = "ds-contingency-pak-floods/ocha_logo_wide.png",
+#   dest = tf
+# )
+# )
+# )
 
-capture.output(
-  invisible(
-  AzureStor$download_blob(
-  container = sc_projects, 
-  src = "ds-contingency-pak-floods/ocha_logo_wide.png",
-  dest = tf
-)
-)
-)
+tf <- cumulus$blob_read(container = "projects", "ds-contingency-pak-floods/ocha_logo_wide.png",return_path_only = TRUE,progress_show = FALSE)
+
 ```
 
 ```{r}
