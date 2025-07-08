@@ -1,3 +1,4 @@
+
 box::use(
   terra[...],
   arrow[...],
@@ -13,7 +14,6 @@ box::use(
   glue[...],
   blastula[...],
   zoo[...]
-  
   )
 
 box::use(
@@ -23,7 +23,8 @@ box::use(
   logger
 )
 
-
+logger$log_info("init script")
+print(cumulus:::get_sas_key)
 # box::use(../R/utils[azure_endpoint_url,load_proj_contatiners])
 box::use(btools=../src/email_utils)
 gghdx()
@@ -123,19 +124,14 @@ df_thresholds_25 <- cumulus$blob_read(
 # load aoi geodata --------------------------------------------------------
 logger$log_info("Read basin geographies")
 
-tf <- tempfile(fileext = ".parquet")
-# AzureStor$download_blob(
-#   container = pc$PROJECTS_CONT,
-#   src = "ds-contingency-pak-floods/hybas_asia_basins_03_04.parquet",
-#   dest = tf
-# )
 
-pc <- cumulus$blob_containers(stage ="dev")
-AzureStor$download_blob(
-  container =pc$projects,
-  src = "ds-contingency-pak-floods/hybas_asia_basins_03_04.parquet",
-  dest = tf
+tf <- cumulus$blob_read(
+  name = "ds-contingency-pak-floods/hybas_asia_basins_03_04.parquet",
+  container = "projects",
+  stage = "dev",
+  return_path_only = T
 )
+
 gdf_aoi_bas4 <- open_dataset(tf) |>
   filter(
     level == "04",

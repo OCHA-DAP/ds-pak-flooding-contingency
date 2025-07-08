@@ -75,8 +75,6 @@ jobs:
       - name: Install R dependencies
         if: steps.cache-r-deps.outputs.cache-hit != 'true'
         run: |
-          Rscript -e 'install.packages("remotes")'
-          Rscript -e 'install.packages("logger")'
           Rscript .github/depends_email.R
     
       # - name: Run R-script-test-env-vars

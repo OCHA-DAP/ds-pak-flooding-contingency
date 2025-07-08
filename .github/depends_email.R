@@ -2,7 +2,9 @@
 
 
 install.packages(
-  c("terra",
+  c(
+    "remotes",
+    "terra",
     "arrow",
     "remotes",
     "gghdx",
@@ -15,6 +17,7 @@ install.packages(
     "gghdx",
     "tidyr",
     "glue",
+    "logger",
     "blastula",
     "exactextractr",
     "rlang",
