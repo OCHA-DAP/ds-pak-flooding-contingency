@@ -19,14 +19,15 @@ box::use(
 box::use(
   exactextractr,
   AzureStor, 
-  cumulus
+  cumulus,
+  logger
 )
 
 
 # box::use(../R/utils[azure_endpoint_url,load_proj_contatiners])
 box::use(btools=../src/email_utils)
 gghdx()
-
+globals()
 
 
 is_test_email <- as.logical(Sys.getenv("TEST_EMAIL", unset = TRUE))
@@ -105,10 +106,12 @@ df_receps <- df_receps |>
 #   dest = tf
 # )
 
-df_thresholds_24 <- cumulus$blob_read(
-    container = "projects",
-    name =  "ds-contingency-pak-floods/imerg_flooding_thresholds.parquet",
-  )
+# df_thresholds_24 <- cumulus$blob_read(
+#     container = "projects",
+#     name =  "ds-contingency-pak-floods/imerg_flooding_thresholds.parquet",
+#   )
+logger$log_info("reading thresholds")
+
 df_thresholds_25 <- cumulus$blob_read(
     container = "projects",
     name =  "ds-contingency-pak-floods/imerg_flooding_thresholds_2025.parquet",
@@ -119,7 +122,7 @@ df_thresholds_25 <- cumulus$blob_read(
 
 
 # load aoi geodata --------------------------------------------------------
-
+logger$log_info("Read basin geographies")
 
 tf <- tempfile(fileext = ".parquet")
 # AzureStor$download_blob(
@@ -145,8 +148,16 @@ gdf_aoi_bas4 <- open_dataset(tf) |>
 
 
 # Load IMERG Rasters ------------------------------------------------------
-# debugonce(cumulus$blob_containers)
-prod_containers <- cumulus$blob_containers(stage = "prod",write_access = FALSE)
+
+
+logger$log_info("Init Prod Container")
+prod_containers <- cumulus$blob_containers(
+  stage = "prod",
+  write_access = FALSE
+  )
+
+
+logger$log_info("Scan prod container for relevant rasters")
 cog_folder_contents <- AzureStor$list_blobs(prod_containers$raster, dir = "imerg/daily/late/v7/processed")
 
 cog_tbl <- cog_folder_contents |>
@@ -168,7 +179,7 @@ az_urls <- cog_tbl |>
   pull(az_url)
 
 
-
+logger$log_info("Read rasters")
 r <- rast(az_urls, win = gdf_aoi_bas4)
 names(r) <- extract_date(sources(r))
 
