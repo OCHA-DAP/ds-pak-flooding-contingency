@@ -67,6 +67,7 @@ Sys.setenv(AZURE_SAS = Sys.getenv("DSCI_AZ_BLOB_PROD_SAS"))
 # Sys.setenv(AZURE_STORAGE_ACCOUNT = Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
 Sys.setenv(AZURE_STORAGE_ACCOUNT = "imb0chd0prod")
 
+names(Sys.getenv())
 
 # Create container end points ---------------------------------------------
 # pc <- load_proj_contatiners()
