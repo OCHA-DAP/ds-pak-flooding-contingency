@@ -83,4 +83,4 @@ jobs:
       # 
       - name: Run R-script-cadc-2025-trigger-monitoring
         shell: bash
-        run: Rscript ./src/monitoring_imerge_2025a.R
+        run: Rscript ./src/monitoring_imerg_2025a.R
