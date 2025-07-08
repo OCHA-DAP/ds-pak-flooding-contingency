@@ -26,7 +26,7 @@ box::use(
 # box::use(../R/utils[azure_endpoint_url,load_proj_contatiners])
 box::use(btools=../src/email_utils)
 gghdx()
-tar_source()
+
 
 
 is_test_email <- as.logical(Sys.getenv("TEST_EMAIL", unset = TRUE))
