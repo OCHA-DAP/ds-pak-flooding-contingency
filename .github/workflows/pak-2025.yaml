@@ -81,6 +81,6 @@ jobs:
       #   shell: bash
       #   run: Rscript ./src/monitoring_2025/test_gha_settings.R
       # 
-      - name: Run R-script-cadc-2025-trigger-monitoring
+      - name: Run R-script- IMERG Pakistan
         shell: bash
-        run: Rscript ./src/monitoring_imerg_2025a.R
+        run: Rscript ./src/monitor_imerg_2025a.R
