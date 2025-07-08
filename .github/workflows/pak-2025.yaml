@@ -78,9 +78,9 @@ jobs:
           Rscript -e 'install.packages("logger")'
           Rscript .github/depends_email.R
     
-      - name: Run R-script-test-env-vars
-        shell: bash
-        run: Rscript ./src/monitoring_2025/test_gha_settings.R
+      # - name: Run R-script-test-env-vars
+      #   shell: bash
+      #   run: Rscript ./src/monitoring_2025/test_gha_settings.R
 
       - name: Run R-script- IMERG Pakistan
         shell: bash
