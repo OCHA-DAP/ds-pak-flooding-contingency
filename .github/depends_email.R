@@ -16,6 +16,7 @@ install.packages(
     "stringr",
     "gghdx",
     "tidyr",
+    "readr",
     "glue",
     "logger",
     "blastula",

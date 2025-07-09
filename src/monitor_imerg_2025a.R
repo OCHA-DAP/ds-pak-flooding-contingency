@@ -1,4 +1,3 @@
-
 box::use(
   terra[...],
   arrow[...],
@@ -14,19 +13,19 @@ box::use(
   glue[...],
   blastula[...],
   zoo[...]
-  )
+)
 
 box::use(
   exactextractr,
-  AzureStor, 
+  AzureStor,
   cumulus,
   logger
 )
 
 logger$log_info("init script")
-print(cumulus:::get_sas_key)
+# print(cumulus:::get_sas_key)
 # box::use(../R/utils[azure_endpoint_url,load_proj_contatiners])
-box::use(btools=../src/email_utils)
+box::use(btools = .. / src / email_utils)
 gghdx()
 
 is_test_email <- as.logical(Sys.getenv("TEST_EMAIL", unset = TRUE))
@@ -58,7 +57,7 @@ BAS4_ID_AOI <- c(
 # add `AZURE_SAS` + `AZURE_STORAGE_ACCOUNT` to `.Renviron`. Oddly,Setting the
 # Sys.env vars like this on the GHA runner does not work even if I
 # have `DSCI_AZ_SAS_DEV` + `DSCI_AZ_STORAGE_ACCOUNT` already stored as secrets
-# I still need to to have  AZURE_SAS + `AZURE_STORAGE_ACCOUNT` stored 
+# I still need to to have  AZURE_SAS + `AZURE_STORAGE_ACCOUNT` stored
 # separately. I think it could be due to a newer version of gdal on runner w/
 # slighly different requirements for accessing azure storage.
 
@@ -66,7 +65,7 @@ Sys.setenv(AZURE_SAS = Sys.getenv("DSCI_AZ_BLOB_PROD_SAS"))
 # Sys.setenv(AZURE_STORAGE_ACCOUNT = Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
 Sys.setenv(AZURE_STORAGE_ACCOUNT = "imb0chd0prod")
 
-names(Sys.getenv())
+# names(Sys.getenv())
 
 # Create container end points ---------------------------------------------
 # pc <- load_proj_contatiners()
@@ -75,47 +74,38 @@ names(Sys.getenv())
 
 
 # tf <- tempfile(fileext = "csv")
-# 
+#
 # AzureStor$download_blob(
 #   container = pc$PROJECTS_CONT,
 #   src = "ds-contingency-pak-floods/pak_monitoring_email_receps.csv",
 #   dest = tf
 # )
 
+logger$log_info("Reading recipients CSV")
 df_receps <- cumulus$blob_read(
   container = "projects",
-  name = "ds-contingency-pak-floods/pak_monitoring_email_receps.csv"
-  
+  name = "ds-contingency-pak-floods/pak_monitoring_email_receps.csv",
+  stage = "dev",
+  write_access = FALSE
 )
 # df_receps <- read.csv(tf)
-df_receps <- df_receps |> 
+df_receps <- df_receps |>
   mutate(
     Frequency = trimws(tolower(Frequency))
   )
-df_receps <- df_receps |> 
+df_receps <- df_receps |>
   filter(test)
 
 # Load thresholds data.frame ----------------------------------------------
 
-# 
-# tf <- tempfile(fileext = ".parquet")
-# 
-# AzureStor$download_blob(
-#   container = pc$PROJECTS_CONT,
-#   src = "ds-contingency-pak-floods/imerg_flooding_thresholds.parquet",
-#   dest = tf
-# )
-
-# df_thresholds_24 <- cumulus$blob_read(
-#     container = "projects",
-#     name =  "ds-contingency-pak-floods/imerg_flooding_thresholds.parquet",
-#   )
 logger$log_info("reading thresholds")
 
 df_thresholds_25 <- cumulus$blob_read(
-    container = "projects",
-    name =  "ds-contingency-pak-floods/imerg_flooding_thresholds_2025.parquet",
-  )
+  container = "projects",
+  name = "ds-contingency-pak-floods/imerg_flooding_thresholds_2025.parquet",
+  stage = "dev",
+  write_access = FALSE
+)
 
 
 # df_thresholds <- read_parquet(tf)
@@ -129,7 +119,8 @@ tf <- cumulus$blob_read(
   name = "ds-contingency-pak-floods/hybas_asia_basins_03_04.parquet",
   container = "projects",
   stage = "dev",
-  return_path_only = T
+  return_path_only = T,
+  write_access = FALSE
 )
 
 gdf_aoi_bas4 <- open_dataset(tf) |>
@@ -149,7 +140,7 @@ logger$log_info("Init Prod Container")
 prod_containers <- cumulus$blob_containers(
   stage = "prod",
   write_access = FALSE
-  )
+)
 
 
 logger$log_info("Scan prod container for relevant rasters")
@@ -232,7 +223,7 @@ p <- df_zonal_processed |>
     y = "Precipitation (mm)",
     caption = glue("Data source: IMERG\nProduced {Sys.Date()} ")
   ) +
-  scale_y_continuous(limits = c(0, NA), expand = expansion(add = c(0, 10)))+
+  scale_y_continuous(limits = c(0, NA), expand = expansion(add = c(0, 10))) +
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_text(size = 14),
@@ -264,31 +255,30 @@ email_creds <- creds_envvar(
   use_ssl = TRUE
 )
 
-if(is_test_email){
-  to_email <- df_receps[df_receps$test,"Email Address"]
-} else if(!is_test_email){
-  if(is_alert){
-    to_email <- df_receps |> 
+if (is_test_email) {
+  to_email <- df_receps[df_receps$test, "Email Address"]
+} else if (!is_test_email) {
+  if (is_alert) {
+    to_email <- df_receps |>
       filter(
         Frequency == "alerts"
-      ) |> 
+      ) |>
       pull(
         Email.Address
       )
-  } else if(!is_alert) {
-    to_email <- df_receps |> 
+  } else if (!is_alert) {
+    to_email <- df_receps |>
       filter(
         Frequency == "daily"
-      ) |> 
+      ) |>
       pull(`Email Address`)
-    
   }
 }
 
 email_knitted <- render_email(
   input = email_rmd_fp,
   envir = parent.frame()
-) 
+)
 
 smtp_send(
   email_knitted,
@@ -302,25 +292,25 @@ smtp_send(
 
 # one-off -----------------------------------------------------------------
 
-# 
-# 
+#
+#
 # gdf_adm1 <- download_fieldmaps_sf(iso3="pak",layer = "pak_adm1")
-# adm1_pcode <- gdf_adm1 |> 
-#   filter(ADM1_EN =="Khyber Pakhtunkhwa") |> 
+# adm1_pcode <- gdf_adm1 |>
+#   filter(ADM1_EN =="Khyber Pakhtunkhwa") |>
 #   pull(ADM1_PCODE)
 # con_prod <- cumulus::pg_con(stage= "prod")
 # DBI:::dbListTables(con_prod)
 # cumulus::pg_load_seas5_historical()
-# 
-# df_imerg_adm1 <- dplyr::tbl(con_prod, "imerg") |> 
+#
+# df_imerg_adm1 <- dplyr::tbl(con_prod, "imerg") |>
 #   filter(
 #     adm_level ==1,
 #     pcode ==adm1_pcode
-#     ) |> 
+#     ) |>
 #   collect()
-# 
-# 
-# 
+#
+#
+#
 #   df_adm1_roll <- df_imerg_adm1 |>
 #   rename(
 #     `1d` = mean
@@ -333,32 +323,32 @@ smtp_send(
 #   pivot_longer(
 #     cols = c("1d", "2d", "3d"),names_to= "name",
 #     values_to = "value"
-#     
-#     ) 
-# 
+#
+#     )
+#
 #   df_adm1_thresh <- df_adm1_roll |>
 #     mutate(
 #       yr_date = floor_date(valid_date, "year")
-#     ) |> 
+#     ) |>
 #     group_by(yr_date, name) |>
 #     summarise(
 #       value = max(value, na.rm = TRUE)
-#     ) |> 
+#     ) |>
 #     grouped_quantile_summary(
 #       x = "value",
 #       grp_vars = c( "name"),
 #       rps = 1:10
-#     ) |> 
+#     ) |>
 #     filter(name == "3d",
 #            rp ==5)
-#   
-#   
-#   df_adm1_roll_filt <- df_adm1_roll |> 
+#
+#
+#   df_adm1_roll_filt <- df_adm1_roll |>
 #     filter(
 #       valid_date %in%     last_10_dates[-c(1,2)],
 #       name == "3d"
-#     ) 
-#   df_adm1_roll_filt |> 
+#     )
+#   df_adm1_roll_filt |>
 #     ggplot(
 #       aes(x= valid_date, y= value)
 #     )+
@@ -392,6 +382,6 @@ smtp_send(
 #       plot.title = element_text(size = 20),
 #       plot.subtitle = element_text(size = 16)
 #     )
-#   
-#     
-#     
+#
+#
+#
