@@ -100,7 +100,7 @@ df_receps <- df_receps |>
 
 logger$log_info("reading thresholds")
 
-df_thresholds_25 <- cumulus$blob_read(
+df_thresholds <- cumulus$blob_read(
   container = "projects",
   name = "ds-contingency-pak-floods/imerg_flooding_thresholds_2025.parquet",
   stage = "dev",
@@ -203,7 +203,7 @@ p <- df_zonal_processed |>
   geom_line() +
   geom_point() +
   geom_hline(
-    yintercept = df_thresholds_25$q_val,
+    yintercept = df_thresholds$q_val,
     color = hdx_hex("tomato-hdx"),
     linetype = "dashed"
   ) +
