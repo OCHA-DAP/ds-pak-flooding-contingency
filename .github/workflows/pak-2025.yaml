@@ -32,6 +32,7 @@ jobs:
       DS_AZ_DB_PROD_PW_WRITE: ${{ secrets.DSCI_AZ_DB_PROD_PW_WRITE }}
       DS_AZ_DB_PROD_NAME: ${{ secrets.DS_AZ_DB_PROD_NAME }}
       TEST_EMAIL: ${{ inputs.TEST_EMAIL || 'FALSE' }}
+
       
     services:
       postgres:
@@ -78,6 +79,7 @@ jobs:
         if: steps.cache-r-deps.outputs.cache-hit != 'true'
         run: |
           Rscript .github/depends_email.R
+
     
       # - name: Run R-script-test-env-vars
       #   shell: bash

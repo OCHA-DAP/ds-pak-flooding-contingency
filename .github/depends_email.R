@@ -1,6 +1,4 @@
-
-
-
+#' install R pacakges for GHA
 install.packages(
   c(
     "remotes",
@@ -17,6 +15,7 @@ install.packages(
     "gghdx",
     "tidyr",
     "readr",
+    "logger",
     "glue",
     "logger",
     "blastula",
