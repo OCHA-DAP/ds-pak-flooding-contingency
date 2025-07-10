@@ -230,7 +230,7 @@ email_creds <- creds_envvar(
 )
 
 if (is_test_email) {
-  to_email <- df_receps[df_receps$test, "Email Address"]
+  to_email <- df_receps[df_receps$test, "Email Address"]$`Email Address`
 } else if (!is_test_email) {
   if (is_alert) {
     to_email <- df_receps |>

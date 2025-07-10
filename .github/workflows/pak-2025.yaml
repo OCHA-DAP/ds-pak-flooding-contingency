@@ -13,6 +13,8 @@ on:
           options:
             - "TRUE"
             - "FALSE"  
+  schedule:
+    - cron: '30 15 * * *' # start at 8:10 AM run every 3 hours until midnight
           
 jobs:
   monitor:
@@ -29,7 +31,7 @@ jobs:
       DS_AZ_DB_PROD_HOST: ${{ secrets.DSCI_AZ_DB_PROD_HOST }}
       DS_AZ_DB_PROD_PW_WRITE: ${{ secrets.DSCI_AZ_DB_PROD_PW_WRITE }}
       DS_AZ_DB_PROD_NAME: ${{ secrets.DS_AZ_DB_PROD_NAME }}
-      EMAIL_WHO: ${{ inputs.EMAIL_WHO || 'core_developer' }}
+      TEST_EMAIL: ${{ inputs.TEST_EMAIL || 'FALSE' }}
       
     services:
       postgres:
