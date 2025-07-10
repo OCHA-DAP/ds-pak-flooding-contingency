@@ -1,7 +1,10 @@
 #' install R pacakges for GHA
 install.packages(
-  c("terra",
+  c(
+    "remotes",
+    "terra",
     "arrow",
+    "remotes",
     "gghdx",
     "geoarrow",
     "sf",
@@ -11,13 +14,17 @@ install.packages(
     "stringr",
     "gghdx",
     "tidyr",
+    "readr",
     "logger",
     "glue",
+    "logger",
     "blastula",
     "exactextractr",
     "rlang",
     "box",
     "zoo",
-    "AzureStor")
+    "AzureStor",
+    "logger"
+    )
 )
 remotes::install_github("OCHA-DAP/cumulus")

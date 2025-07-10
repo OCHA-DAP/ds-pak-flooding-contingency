@@ -83,7 +83,8 @@ grouped_quantile_summary <- function(df,
 #' @return data.frame
 select_final_thresholds <- function(
     df,
-    write_blob = T) {
+    write_blob = T,
+    v = 2025) {
   df_sel <- df |>
     filter(
       aoi == "basin_4",
@@ -91,17 +92,28 @@ select_final_thresholds <- function(
       rp == 5
     )
   if (write_blob) {
-    cont <- load_proj_contatiners()$PROJECTS_CONT
-    tf <- tempfile(fileext = ".parquet")
-    write_parquet(
-      x = df_sel,
-      sink = tf
-    )
-    AzureStor::upload_blob(
-      container = cont,
-      src = tf,
-      dest = "ds-contingency-pak-floods/imerg_flooding_thresholds.parquet",
+    if(v==2024){
+      cont <- load_proj_contatiners()$PROJECTS_CONT
+      tf <- tempfile(fileext = ".parquet")
+      write_parquet(
+        x = df_sel,
+        sink = tf
+      )
+      AzureStor::upload_blob(
+        container = cont,
+        src = tf,
+        dest = "ds-contingency-pak-floods/imerg_flooding_thresholds.parquet",
+      )
+    }
+  if(v==2025){
+    cumulus::blob_write(
+      df_sel,
+      container = "projects",
+      name = "ds-contingency-pak-floods/imerg_flooding_thresholds_2025.parquet",
+      
     )
   }
+  }
+
   df_sel
 }
