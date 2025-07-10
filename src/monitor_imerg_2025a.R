@@ -28,6 +28,8 @@ box::use(btools = .. / src / email_utils)
 gghdx()
 
 is_test_email <- as.logical(Sys.getenv("TEST_EMAIL", unset = TRUE))
+# is_test_email <- as.logical(Sys.getenv("TEST_EMAIL", unset = FALSE))
+logger$log_info("TEST_EMAIL: {is_test_email}")
 
 extract_date <- function(x) {
   as_date(
@@ -71,8 +73,6 @@ df_receps <- df_receps |>
   mutate(
     Frequency = trimws(tolower(Frequency))
   )
-df_receps <- df_receps |>
-  filter(test)
 
 # Load thresholds data.frame ----------------------------------------------
 
