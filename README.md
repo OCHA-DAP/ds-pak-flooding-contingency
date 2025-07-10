@@ -15,12 +15,14 @@ analysis pipeline or the monitoring pipeline whose sourcing is not already
 self contained.
 
 2. Threshold setting: `targets` pipeline
-    a. In 2024 a standard [{targets}](https://books.ropensci.org/targets/) pipeline was created to run the historical
-       analysis of rainfall and create the thresholds used for monitoring.
-    b. In July 2025 the analysis was updated and a new targets pipeline `_targets_imerg_v7.R` was created.
+
+    a. In 2024, a standard [{targets}](https://books.ropensci.org/targets/) pipeline was created to run the historical analysis of rainfall and create the thresholds used for monitoring.
+
+    b. In July 2025, the analysis was updated and a new targets pipeline `_targets_imerg_v7.R` was created.
+
     c. The configs for the two pipelines can be found in `_targets.yaml`.
-    d. The ideal way to run either pipeline is to simply set the `TAR_PROJECT` env var according to the project name 
-       of the respective project in the yaml file (i.e., `Sys.setenv(TAR_PROJECT = "pak_imerg_2025")`).
+
+    d. The ideal way to run either pipeline is to simply set the `TAR_PROJECT` env var according to the project name of the respective project in the yaml file (i.e., `Sys.setenv(TAR_PROJECT = "pak_imerg_2025")`).  
        Once that is done you can simply run `targets::tar_make()`. More details on targets can be found in the link above.
 
 
