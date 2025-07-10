@@ -72,7 +72,8 @@ df_receps <- cumulus$blob_read(
 df_receps <- df_receps |>
   mutate(
     Frequency = trimws(tolower(Frequency))
-  )
+  ) |> 
+  filter(keep_2025)
 
 # Load thresholds data.frame ----------------------------------------------
 
