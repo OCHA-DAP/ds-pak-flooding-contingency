@@ -14,6 +14,7 @@ The repo is structured as follows;
 analysis pipeline or the monitoring pipeline whose sourcing is not already
 self contained.
 2. `_targets.R`:
+
       a. in 2024 a standard [{targets}](https://books.ropensci.org/targets/) pipeline was created to run the historical
 analysis of rainfall and create the thresholds used for monitoring.
      b. In July 2025 the analysis was updated and new targets pipeline `_targets_imerg_v7.R` was created.
