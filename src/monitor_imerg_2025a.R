@@ -23,8 +23,7 @@ box::use(
 )
 
 logger$log_info("init script")
-# print(cumulus:::get_sas_key)
-# box::use(../R/utils[azure_endpoint_url,load_proj_contatiners])
+
 box::use(btools = .. / src / email_utils)
 gghdx()
 
@@ -52,34 +51,13 @@ BAS4_ID_AOI <- c(
 
 
 # Set required env vars for terra::rast -----------------------------------
-
-# Oddly, on my computer i need to un-comment these to run OR I think I could
-# add `AZURE_SAS` + `AZURE_STORAGE_ACCOUNT` to `.Renviron`. Oddly,Setting the
-# Sys.env vars like this on the GHA runner does not work even if I
-# have `DSCI_AZ_SAS_DEV` + `DSCI_AZ_STORAGE_ACCOUNT` already stored as secrets
-# I still need to to have  AZURE_SAS + `AZURE_STORAGE_ACCOUNT` stored
-# separately. I think it could be due to a newer version of gdal on runner w/
-# slighly different requirements for accessing azure storage.
+# see original 2024 "monitor_imerg.R" for more info
 
 Sys.setenv(AZURE_SAS = Sys.getenv("DSCI_AZ_BLOB_PROD_SAS"))
-# Sys.setenv(AZURE_STORAGE_ACCOUNT = Sys.getenv("DSCI_AZ_STORAGE_ACCOUNT"))
 Sys.setenv(AZURE_STORAGE_ACCOUNT = "imb0chd0prod")
-
-# names(Sys.getenv())
-
-# Create container end points ---------------------------------------------
-# pc <- load_proj_contatiners()
 
 # Load thresholds data.frame ----------------------------------------------
 
-
-# tf <- tempfile(fileext = "csv")
-#
-# AzureStor$download_blob(
-#   container = pc$PROJECTS_CONT,
-#   src = "ds-contingency-pak-floods/pak_monitoring_email_receps.csv",
-#   dest = tf
-# )
 
 logger$log_info("Reading recipients CSV")
 df_receps <- cumulus$blob_read(
@@ -88,7 +66,7 @@ df_receps <- cumulus$blob_read(
   stage = "dev",
   write_access = FALSE
 )
-# df_receps <- read.csv(tf)
+
 df_receps <- df_receps |>
   mutate(
     Frequency = trimws(tolower(Frequency))
@@ -106,10 +84,6 @@ df_thresholds <- cumulus$blob_read(
   stage = "dev",
   write_access = FALSE
 )
-
-
-# df_thresholds <- read_parquet(tf)
-
 
 # load aoi geodata --------------------------------------------------------
 logger$log_info("Read basin geographies")
@@ -275,13 +249,15 @@ if (is_test_email) {
   }
 }
 
+logger$log_info("Knitting email")
 email_knitted <- render_email(
   input = email_rmd_fp,
   envir = parent.frame()
 )
 
+logger$log_info("Sending email")
 smtp_send(
-  email_knitted,
+  email = email_knitted,
   from = "data.science@humdata.org",
   to = to_email,
   subject = email_txt$subject,
@@ -290,98 +266,3 @@ smtp_send(
 
 
 
-# one-off -----------------------------------------------------------------
-
-#
-#
-# gdf_adm1 <- download_fieldmaps_sf(iso3="pak",layer = "pak_adm1")
-# adm1_pcode <- gdf_adm1 |>
-#   filter(ADM1_EN =="Khyber Pakhtunkhwa") |>
-#   pull(ADM1_PCODE)
-# con_prod <- cumulus::pg_con(stage= "prod")
-# DBI:::dbListTables(con_prod)
-# cumulus::pg_load_seas5_historical()
-#
-# df_imerg_adm1 <- dplyr::tbl(con_prod, "imerg") |>
-#   filter(
-#     adm_level ==1,
-#     pcode ==adm1_pcode
-#     ) |>
-#   collect()
-#
-#
-#
-#   df_adm1_roll <- df_imerg_adm1 |>
-#   rename(
-#     `1d` = mean
-#   ) |>
-#   arrange( valid_date) |>
-#   mutate(
-#     `2d` = zoo::rollsum(x = `1d`, k = 2, fill = NA, align = "right"),
-#     `3d` = zoo::rollsum(x = `1d`, k = 3, fill = NA, align = "right"),
-#   ) |>
-#   pivot_longer(
-#     cols = c("1d", "2d", "3d"),names_to= "name",
-#     values_to = "value"
-#
-#     )
-#
-#   df_adm1_thresh <- df_adm1_roll |>
-#     mutate(
-#       yr_date = floor_date(valid_date, "year")
-#     ) |>
-#     group_by(yr_date, name) |>
-#     summarise(
-#       value = max(value, na.rm = TRUE)
-#     ) |>
-#     grouped_quantile_summary(
-#       x = "value",
-#       grp_vars = c( "name"),
-#       rps = 1:10
-#     ) |>
-#     filter(name == "3d",
-#            rp ==5)
-#
-#
-#   df_adm1_roll_filt <- df_adm1_roll |>
-#     filter(
-#       valid_date %in%     last_10_dates[-c(1,2)],
-#       name == "3d"
-#     )
-#   df_adm1_roll_filt |>
-#     ggplot(
-#       aes(x= valid_date, y= value)
-#     )+
-#     geom_line()+
-#     geom_point()+
-#     geom_hline(yintercept = df_adm1_thresh$q_val,
-#                color = hdx_hex("tomato-hdx"),
-#                linetype = "dashed"
-#     ) +
-#     annotate(
-#       geom = "text",
-#       x = max(df_adm1_roll_filt$valid_date) - 2,
-#       y = df_adm1_thresh$q_val + 5,
-#       label = glue("Threshold (5 year RP value): {round(df_adm1_thresh$q_val,0)} mm"),
-#       size = 6
-#     ) +
-#     scale_x_date(
-#       date_breaks = "day", date_labels = "%b %d"
-#     ) +
-#     labs(
-#       title = "Cumulative 3-day Precipitation",
-#       subtitle = "Pakistan: Khyber Pakhtunkhwa Province",
-#       y = "Precipitation (mm)",
-#       caption = glue("Data source: IMERG\nProduced {Sys.Date()} ")
-#     ) +
-#     scale_y_continuous(limits = c(0, NA), expand = expansion(add = c(0, 10)))+
-#     theme(
-#       axis.title.x = element_blank(),
-#       axis.title.y = element_text(size = 14),
-#       axis.text.x = element_text(size = 14),
-#       plot.title = element_text(size = 20),
-#       plot.subtitle = element_text(size = 16)
-#     )
-#
-#
-#
