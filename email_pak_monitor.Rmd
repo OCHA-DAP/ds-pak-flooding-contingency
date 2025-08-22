@@ -62,7 +62,7 @@ add_image(
 ```
 
 
-# Pakistan Rainfall Monitoring 2025
+# Pakistan Rainfall Monitoring
 
 ## Lower Indus Basin - `r email_txt$body_status`
 
